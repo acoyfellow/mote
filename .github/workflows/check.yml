@@ -1,0 +1,41 @@
+name: check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  native:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test native host and capability bridge
+        run: swift test --package-path app
+
+  surfaces:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Check editable surface
+        working-directory: workspace
+        run: |
+          bun install --frozen-lockfile
+          bun run check
+          bun run build
+          bunx playwright install chromium
+          bun run dev -- --host 127.0.0.1 --port 41732 --strictPort > /tmp/mote-vite.log 2>&1 &
+          for i in {1..30}; do curl -fsS http://127.0.0.1:41732 >/dev/null && break; sleep 1; done
+          node ../scripts/test-surface.mjs
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - name: Check documentation site
+        working-directory: site
+        run: |
+          npm ci
+          npm run build
+          npm run check

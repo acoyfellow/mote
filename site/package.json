@@ -1,0 +1,23 @@
+{
+  "name": "mote-site",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "check": "svelte-check --tsconfig ./tsconfig.json && tsc --noEmit",
+    "dev": "node build.mjs && wrangler dev"
+  },
+  "dependencies": {
+    "hono": "^4.12.19",
+    "svelte": "^5.45.0",
+    "svelte-hono": "^0.1.1"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250410.0",
+    "@types/node": "^25.0.0",
+    "svelte-check": "^4.4.5",
+    "typescript": "^5.9.3",
+    "wrangler": "^4.92.0"
+  }
+}

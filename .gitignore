@@ -1,0 +1,11 @@
+.build/
+.DS_Store
+node_modules/
+workspace/node_modules/
+workspace/dist/
+site/node_modules/
+site/build/
+site/bundles.generated.ts
+site/.wrangler/
+site/.guardrail/
+*.log

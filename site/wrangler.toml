@@ -1,0 +1,11 @@
+name = "mote"
+main = "build/worker.bundled.mjs"
+compatibility_date = "2026-06-11"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = false
+
+[build]
+command = "node build.mjs"
+
+# Intentionally no deployment routes. This site is local-only unless it passes
+# an explicit security review and a deployment target is added back.
