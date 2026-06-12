@@ -7,5 +7,6 @@ workers_dev = false
 [build]
 command = "node build.mjs"
 
-# Intentionally no deployment routes. This site is local-only unless it passes
-# an explicit security review and a deployment target is added back.
+[[routes]]
+pattern = "mote.coey.dev"
+custom_domain = true
