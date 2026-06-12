@@ -15,8 +15,25 @@ struct EmployeeConfig: Decodable, Sendable {
         let endpointLabel: String?
     }
 
+    struct RemoteCoordinator: Decodable, Sendable {
+        struct Operations: Decodable, Sendable {
+            let connectorStatus: String
+            let sessions: String
+            let attention: String
+            let acknowledgeAttention: String
+            let injectSession: String
+        }
+
+        let label: String
+        let baseURL: String
+        let tokenExecutable: String
+        let tokenArguments: [String]
+        let operations: Operations
+    }
+
     let authResource: AuthResource
     let presentation: Presentation?
+    let remoteCoordinator: RemoteCoordinator?
 
     static func load() throws -> EmployeeConfig {
         let file = ProcessInfo.processInfo.environment["MOTE_EMPLOYEE_CONFIG"]

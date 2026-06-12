@@ -24,7 +24,7 @@ body {
   overflow: hidden;
 }
 
-main { padding: 16px; min-height: 620px; }
+main { padding: 16px; min-height: 820px; }
 .topbar { display: flex; align-items: center; justify-content: space-between; padding: 0 2px 14px; }
 .identity { display: flex; align-items: center; gap: 10px; }
 .identity div { display: grid; line-height: 1.15; }
@@ -45,7 +45,7 @@ button:disabled { opacity: .48; }
 
 .error-banner { width: 100%; display: flex; justify-content: space-between; text-align: left; color: #ffd5cf; background: rgba(180,45,36,.2); border-color: rgba(255,115,103,.22); padding: 9px 11px; margin-bottom: 10px; font-size: 11px; }
 
-.hero-card, .portal-card, .mini-card, .workspace-row { border: 1px solid var(--line); background: var(--card); box-shadow: inset 0 1px 0 rgba(255,255,255,.025), 0 14px 40px rgba(0,0,0,.14); }
+.hero-card, .portal-card, .remote-card, .mini-card, .workspace-row { border: 1px solid var(--line); background: var(--card); box-shadow: inset 0 1px 0 rgba(255,255,255,.025), 0 14px 40px rgba(0,0,0,.14); }
 .hero-card { position: relative; overflow: hidden; border-radius: 15px; padding: 15px; }
 .hero-card.online { border-color: rgba(102,224,145,.14); }
 .hero-glow { pointer-events: none; position: absolute; width: 170px; height: 130px; border-radius: 50%; right: -65px; top: -80px; background: rgba(70,218,124,.12); filter: blur(35px); }
@@ -75,6 +75,24 @@ button:disabled { opacity: .48; }
 .portal-state i { width: 5px; height: 5px; border-radius: 50%; background: #777b75; }
 .portal-card.healthy .portal-state i { background: var(--green); box-shadow: 0 0 8px rgba(146,247,180,.7); }
 .portal-card > button { flex: none; width: 29px; height: 29px; padding: 0; display: grid; place-items: center; }
+
+.remote-card { margin-top: 9px; padding: 10px; border-radius: 13px; }
+.remote-summary { display: flex; align-items: center; gap: 9px; }
+.remote-copy { min-width: 0; display: grid; flex: 1; line-height: 1.15; }
+.remote-copy span { color: var(--muted); font-size: 9px; }
+.remote-copy strong { margin-top: 2px; font-size: 11px; }
+.remote-copy small { color: #737970; font-size: 8px; margin-top: 3px; }
+.remote-summary > button { width: 29px; height: 29px; padding: 0; display: grid; place-items: center; flex: none; }
+.attention-list, .session-list { margin-top: 9px; padding-top: 4px; border-top: 1px solid var(--line); }
+.attention-row, .session-row { min-height: 40px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid rgba(255,255,255,.045); }
+.attention-row > i { width: 5px; height: 5px; border-radius: 50%; background: #ffc66d; box-shadow: 0 0 7px rgba(255,198,109,.55); flex: none; }
+.attention-row > span, .session-row > span { min-width: 0; flex: 1; display: grid; }
+.attention-row strong, .session-row strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 9px; }
+.attention-row small, .session-row small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 7px; margin-top: 2px; }
+.attention-row button, .session-row button, .steer-form button { height: 24px; padding: 0 8px; font-size: 8px; flex: none; }
+.steer-form { padding: 7px 0; display: flex; gap: 6px; border-bottom: 1px solid rgba(255,255,255,.045); }
+.steer-form input { min-width: 0; flex: 1; height: 28px; padding: 0 9px; border: 1px solid var(--line); border-radius: 8px; outline: none; color: #e8ebe6; background: rgba(0,0,0,.18); font-size: 9px; }
+.steer-form input:focus { border-color: rgba(146,247,180,.35); }
 
 .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 9px; }
 .mini-card { min-width: 0; min-height: 145px; border-radius: 13px; padding: 13px; display: flex; flex-direction: column; }

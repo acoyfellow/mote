@@ -6,6 +6,8 @@
   let machineOutput = $state("checking");
   let reachabilityOutput = $state("checking");
   type PortalStatus = { state: string; accessTokenState?: string; expiresAt?: string | null };
+  type RemoteSession = { id: string; name?: string; status?: string; updated_at?: string };
+  type AttentionItem = { id: string; title?: string; body?: string; seen_at?: string | null };
 
   let maintenanceOutput = $state("checking");
   let machineLabel = $state("Local machine");
@@ -18,7 +20,16 @@
   let refreshing = $state(false);
   let maintenanceRefreshing = $state(false);
   let portalRefreshing = $state(false);
+  let remoteLabel = $state("Remote activity");
+  let remoteConnected = $state(false);
+  let remoteToolCount = $state(0);
+  let remoteSessions = $state<RemoteSession[]>([]);
+  let attentionItems = $state<AttentionItem[]>([]);
+  let remoteRefreshing = $state(false);
+  let steeringSession = $state<string | null>(null);
+  let steeringMessage = $state("");
 
+  const unreadAttention = $derived(attentionItems.filter((item) => !item.seen_at));
   const machineBusy = $derived(busy?.startsWith("machine-") ?? false);
   const reachabilityBusy = $derived(busy === "sleep" || busy?.startsWith("awake-") === true);
   const cleanupBusy = $derived(busy === "cleanup");
@@ -105,8 +116,39 @@
     endpointLabel = String(config.endpointLabel ?? "Private endpoint");
   }
 
+  async function refreshRemote() {
+    if (remoteRefreshing) return;
+    remoteRefreshing = true;
+    try {
+      const overview = await native.remoteCoordinator.overview() as any;
+      remoteLabel = String(overview.label ?? "Remote activity");
+      remoteConnected = overview.connector?.connected === true;
+      remoteToolCount = Array.isArray(overview.connector?.tools) ? overview.connector.tools.length : 0;
+      remoteSessions = Array.isArray(overview.sessions?.result?.sessions) ? overview.sessions.result.sessions : [];
+      attentionItems = Array.isArray(overview.attention?.result?.items) ? overview.attention.result.items : [];
+    } catch (reason) {
+      error = reason instanceof Error ? reason.message : String(reason);
+    } finally {
+      remoteRefreshing = false;
+    }
+  }
+
+  async function acknowledge(id: string) {
+    await run("attention", () => native.remoteCoordinator.acknowledge(id));
+    await refreshRemote();
+  }
+
+  async function sendSteering(sessionId: string) {
+    const content = steeringMessage.trim();
+    if (!content) return;
+    await run("steer", () => native.remoteCoordinator.steer(sessionId, content));
+    steeringMessage = "";
+    steeringSession = null;
+    await refreshRemote();
+  }
+
   async function refreshAll() {
-    await Promise.all([refreshCore(), refreshPortal()]);
+    await Promise.all([refreshCore(), refreshPortal(), refreshRemote()]);
     void refreshMaintenance();
   }
 
@@ -134,10 +176,12 @@
     const statusTimer = window.setInterval(refreshCore, 30_000);
     const maintenanceTimer = window.setInterval(refreshMaintenance, 5 * 60_000);
     const portalTimer = window.setInterval(refreshPortal, 5 * 60_000);
+    const remoteTimer = window.setInterval(refreshRemote, 30_000);
     return () => {
       window.clearInterval(statusTimer);
       window.clearInterval(maintenanceTimer);
       window.clearInterval(portalTimer);
+      window.clearInterval(remoteTimer);
     };
   });
 </script>
@@ -205,6 +249,48 @@
     <button class:spinning={portalRefreshing} disabled={portalRefreshing} aria-label="Refresh configured auth" onclick={() => refreshPortal(true)}>
       <RefreshCw size={14} strokeWidth={1.8} />
     </button>
+  </section>
+
+  <section class="remote-card">
+    <div class="remote-summary">
+      <div class="icon-well small"><Activity size={16} /></div>
+      <div class="remote-copy">
+        <span>{remoteLabel}</span>
+        <strong>{remoteConnected ? "Connected" : "Unavailable"}</strong>
+        <small>{remoteToolCount} capabilities · {remoteSessions.length} recent sessions · {unreadAttention.length} unread</small>
+      </div>
+      <button class:spinning={remoteRefreshing} disabled={remoteRefreshing} aria-label="Refresh remote activity" onclick={refreshRemote}><RefreshCw size={14} /></button>
+      <button aria-label="Open remote coordinator" onclick={() => native.remoteCoordinator.open()}><ChevronRight size={14} /></button>
+    </div>
+
+    {#if unreadAttention.length > 0}
+      <div class="attention-list">
+        {#each unreadAttention.slice(0, 2) as item (item.id)}
+          <div class="attention-row">
+            <i></i>
+            <span><strong>{item.title ?? "Attention requested"}</strong><small>{item.body ?? "A remote task needs review."}</small></span>
+            <button disabled={busy === "attention"} onclick={() => acknowledge(item.id)}>Acknowledge</button>
+          </div>
+        {/each}
+      </div>
+    {/if}
+
+    {#if remoteSessions.length > 0}
+      <div class="session-list">
+        {#each remoteSessions.slice(0, 3) as session (session.id)}
+          <div class="session-row">
+            <span><strong>{session.name || "Untitled session"}</strong><small>{session.status ?? "unknown"} · {session.updated_at ? new Date(session.updated_at.replace(" ", "T") + "Z").toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "recent"}</small></span>
+            <button onclick={() => steeringSession = steeringSession === session.id ? null : session.id}>Steer</button>
+          </div>
+          {#if steeringSession === session.id}
+            <form class="steer-form" onsubmit={(event) => { event.preventDefault(); void sendSteering(session.id); }}>
+              <input bind:value={steeringMessage} aria-label="Steering message" placeholder="Add guidance…" maxlength="1000" />
+              <button disabled={!steeringMessage.trim() || busy === "steer"}>Send</button>
+            </form>
+          {/if}
+        {/each}
+      </div>
+    {/if}
   </section>
 
   <section class="grid">

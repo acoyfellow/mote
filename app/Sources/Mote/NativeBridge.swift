@@ -6,6 +6,8 @@ import WebKit
 @MainActor
 final class NativeBridge: NSObject, WKScriptMessageHandler {
     weak var webView: WKWebView?
+    private var coordinatorToken: (value: String, expiresAt: Date)?
+    private var coordinatorTokenTask: Task<String, Error>?
 
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         guard
@@ -73,6 +75,23 @@ final class NativeBridge: NSObject, WKScriptMessageHandler {
             return await runAuthResource(refresh: false)
         case "authResource.refresh":
             return await runAuthResource(refresh: true)
+        case "remoteCoordinator.overview":
+            return await remoteCoordinatorOverview()
+        case "remoteCoordinator.acknowledge":
+            guard let id = arguments["id"] as? String, !id.isEmpty else { return .failure("Attention id is required") }
+            return await remoteCoordinatorRequest(operation: .acknowledge, method: "POST", body: ["ids": [id]])
+        case "remoteCoordinator.steer":
+            guard let sessionId = arguments["sessionId"] as? String, !sessionId.isEmpty,
+                  let content = arguments["content"] as? String, !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            else { return .failure("Session and steering message are required") }
+            return await remoteCoordinatorRequest(operation: .inject(sessionId), method: "POST", body: ["content": content])
+        case "remoteCoordinator.open":
+            do {
+                let config = try EmployeeConfig.load().remoteCoordinator
+                guard let config, let url = URL(string: config.baseURL) else { return .failure("Remote coordinator is not configured") }
+                NSWorkspace.shared.open(url)
+                return .success(["opened": true])
+            } catch { return .failure(error.localizedDescription) }
         default:
             return .failure("Unknown native command: \(command)")
         }
@@ -112,6 +131,84 @@ final class NativeBridge: NSObject, WKScriptMessageHandler {
         } catch {
             return .failure(error.localizedDescription)
         }
+    }
+
+    private enum CoordinatorOperation {
+        case connectorStatus
+        case sessions
+        case attention
+        case acknowledge
+        case inject(String)
+    }
+
+    private func remoteCoordinatorOverview() async -> BridgeResult {
+        async let connector = remoteCoordinatorRequest(operation: .connectorStatus)
+        async let sessions = remoteCoordinatorRequest(operation: .sessions)
+        async let attention = remoteCoordinatorRequest(operation: .attention)
+        let values = await [connector, sessions, attention]
+        for result in values where result.object["ok"] as? Bool != true { return result }
+        do {
+            let config = try EmployeeConfig.load().remoteCoordinator
+            return .success([
+                "label": config?.label ?? "Remote activity",
+                "connector": (values[0].object["value"] as? [String: Any])?["response"] ?? [:],
+                "sessions": (values[1].object["value"] as? [String: Any])?["response"] ?? [:],
+                "attention": (values[2].object["value"] as? [String: Any])?["response"] ?? [:]
+            ])
+        } catch { return .failure(error.localizedDescription) }
+    }
+
+    private func remoteCoordinatorRequest(operation: CoordinatorOperation, method: String = "GET", body: [String: Any]? = nil) async -> BridgeResult {
+        do {
+            guard let config = try EmployeeConfig.load().remoteCoordinator else { return .failure("Remote coordinator is not configured") }
+            let path: String
+            switch operation {
+            case .connectorStatus: path = config.operations.connectorStatus
+            case .sessions: path = config.operations.sessions
+            case .attention: path = config.operations.attention
+            case .acknowledge: path = config.operations.acknowledgeAttention
+            case .inject(let id): path = config.operations.injectSession.replacingOccurrences(of: "{id}", with: id.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? id)
+            }
+            guard let url = URL(string: path, relativeTo: URL(string: config.baseURL))?.absoluteURL else { return .failure("Configured coordinator URL is invalid") }
+            let token = try await coordinatorIdentity(config)
+            var request = URLRequest(url: url)
+            request.httpMethod = method
+            request.timeoutInterval = 20
+            request.setValue(token, forHTTPHeaderField: "Cf-Access-Token")
+            if let body {
+                request.httpBody = try JSONSerialization.data(withJSONObject: body)
+                request.setValue("application/json", forHTTPHeaderField: "content-type")
+            }
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+                return .failure("Coordinator request failed")
+            }
+            let object = try JSONSerialization.jsonObject(with: data)
+            Self.log("done configured coordinator request")
+            return .success(["response": object])
+        } catch { return .failure(error.localizedDescription) }
+    }
+
+    private func coordinatorIdentity(_ config: EmployeeConfig.RemoteCoordinator) async throws -> String {
+        if let cached = coordinatorToken, cached.expiresAt > Date() { return cached.value }
+        if let running = coordinatorTokenTask { return try await running.value }
+        let task = Task<String, Error> {
+            let result = await runCommand(
+                executable: URL(fileURLWithPath: config.tokenExecutable),
+                arguments: config.tokenArguments,
+                displayName: "configured coordinator identity",
+                timeout: 20
+            )
+            guard result.object["ok"] as? Bool == true,
+                  let token = (result.object["value"] as? [String: Any])?["output"] as? String,
+                  !token.isEmpty else { throw CoordinatorError.identity }
+            return token
+        }
+        coordinatorTokenTask = task
+        defer { coordinatorTokenTask = nil }
+        let token = try await task.value
+        coordinatorToken = (token, Date().addingTimeInterval(120))
+        return token
     }
 
     private func runCommand(executable: URL, arguments: [String], displayName: String, timeout: TimeInterval) async -> BridgeResult {
@@ -191,6 +288,11 @@ final class NativeBridge: NSObject, WKScriptMessageHandler {
         else { return }
         webView?.evaluateJavaScript("window.__moteResolve(\(quotedID), \(json))")
     }
+}
+
+enum CoordinatorError: LocalizedError {
+    case identity
+    var errorDescription: String? { "Could not obtain coordinator identity" }
 }
 
 struct BridgeResult: @unchecked Sendable {

@@ -13,6 +13,7 @@ Edit a `.svelte` file. Save it. The menu-bar panel changes immediately.
 - Vite hot-module reload from a local workspace
 - Promise-based Swift ↔ JavaScript bridge
 - Bounded local controls for the current AX surface
+- Configured remote-activity inbox with connector health, recent sessions, attention acknowledgements, and session steering
 - Native right-click recovery menu
 - Offline runtime after dependencies are installed
 - Cloudflare Worker documentation site built with `svelte-hono`
@@ -76,10 +77,12 @@ Current bridge commands:
 
 | Namespace | Commands |
 |---|---|
-| `app` | info, open workspace, open logs |
+| `app` | info, configuration, open workspace, open logs |
 | `machinectl` | status, start, stop, restart |
 | `reachability` | status, start, stop |
 | `maintenance` | report, cleanup |
+| `authResource` | status, refresh |
+| `remoteCoordinator` | overview, acknowledge, steer, open |
 
 The current AX surface invokes the existing scripts in `~/.hammerspoon`. This keeps the first migration reversible. Those implementations can move behind native or LaunchAgent-backed capabilities later without changing the Svelte API.
 

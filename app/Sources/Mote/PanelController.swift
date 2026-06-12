@@ -23,7 +23,7 @@ final class PanelController: NSObject, NSWindowDelegate, WKNavigationDelegate {
 
         webView = WKWebView(frame: .zero, configuration: configuration)
         panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 390, height: 620),
+            contentRect: NSRect(x: 0, y: 0, width: 390, height: 820),
             styleMask: [.titled, .fullSizeContentView, .nonactivatingPanel],
             backing: .buffered,
             defer: false

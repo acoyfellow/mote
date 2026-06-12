@@ -6,7 +6,7 @@ const browser = await chromium.launch({
   headless: true,
   ...(executablePath ? { executablePath } : {}),
 });
-const page = await browser.newPage({ viewport: { width: 390, height: 620 } });
+const page = await browser.newPage({ viewport: { width: 390, height: 820 } });
 const errors = [];
 page.on("pageerror", (error) => errors.push(error.message));
 page.on("console", (message) => {
@@ -17,8 +17,11 @@ page.on("console", (message) => {
 
 try {
   await page.goto(url, { waitUntil: "networkidle" });
-  await page.getByText("Connected", { exact: true }).waitFor();
+  await page.getByText("Connected", { exact: true }).first().waitFor();
   await page.getByText("Ready", { exact: true }).waitFor();
+  await page.getByText("Remote activity", { exact: true }).waitFor();
+  await page.getByText("Review requested", { exact: true }).waitFor();
+  await page.getByText("Review the current change", { exact: true }).waitFor();
   await page.getByText("128G free", { exact: true }).waitFor();
 
   const refresh = page.getByRole("button", { name: "Refresh status" });
@@ -30,6 +33,15 @@ try {
   await portalRefresh.click();
   await page.waitForFunction(() => !(document.querySelector('[aria-label="Refresh configured auth"]')?.hasAttribute("disabled")));
 
+  const remoteRefresh = page.getByRole("button", { name: "Refresh remote activity" });
+  await remoteRefresh.click();
+  await page.waitForFunction(() => !(document.querySelector('[aria-label="Refresh remote activity"]')?.hasAttribute("disabled")));
+
+  await page.getByRole("button", { name: "Acknowledge" }).click();
+  await page.getByRole("button", { name: "Steer" }).click();
+  await page.getByRole("textbox", { name: "Steering message" }).fill("Continue, but keep the change bounded.");
+  await page.getByRole("button", { name: "Send" }).click();
+
   for (const name of ["Restart", "Stop", "1 hour", "8 hours", "Run cleanup", "Edit this surface"]) {
     const button = page.getByRole("button", { name });
     await button.waitFor();
@@ -38,7 +50,7 @@ try {
   }
 
   if (errors.length) throw new Error(`Browser errors:\n${errors.join("\n")}`);
-  console.log("surface smoke passed: machine, configured auth, refresh, reachability, cleanup, workspace");
+  console.log("surface smoke passed: machine, configured auth, remote activity, attention, steering, reachability, cleanup, workspace");
 } finally {
   await browser.close();
 }
