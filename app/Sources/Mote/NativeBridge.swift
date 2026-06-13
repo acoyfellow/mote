@@ -292,7 +292,7 @@ final class NativeBridge: NSObject, WKScriptMessageHandler {
 
 enum CoordinatorError: LocalizedError {
     case identity
-    var errorDescription: String? { "Could not obtain coordinator identity" }
+    var errorDescription: String? { "Sign-in needed" }
 }
 
 struct BridgeResult: @unchecked Sendable {

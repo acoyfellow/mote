@@ -26,6 +26,7 @@
   let remoteSessions = $state<RemoteSession[]>([]);
   let attentionItems = $state<AttentionItem[]>([]);
   let remoteRefreshing = $state(false);
+  let remoteError = $state<string | null>(null);
   let steeringSession = $state<string | null>(null);
   let steeringMessage = $state("");
 
@@ -126,8 +127,14 @@
       remoteToolCount = Array.isArray(overview.connector?.tools) ? overview.connector.tools.length : 0;
       remoteSessions = Array.isArray(overview.sessions?.result?.sessions) ? overview.sessions.result.sessions : [];
       attentionItems = Array.isArray(overview.attention?.result?.items) ? overview.attention.result.items : [];
+      remoteError = null;
     } catch (reason) {
-      error = reason instanceof Error ? reason.message : String(reason);
+      // Remote auth/connectivity failures stay scoped to this card instead of
+      // taking over the whole panel with a global error banner.
+      remoteConnected = false;
+      remoteSessions = [];
+      attentionItems = [];
+      remoteError = reason instanceof Error ? reason.message : String(reason);
     } finally {
       remoteRefreshing = false;
     }
@@ -251,13 +258,13 @@
     </button>
   </section>
 
-  <section class="remote-card">
+  <section class="remote-card" class:online={remoteConnected} class:degraded={!!remoteError}>
     <div class="remote-summary">
       <div class="icon-well small"><Activity size={16} /></div>
       <div class="remote-copy">
         <span>{remoteLabel}</span>
-        <strong>{remoteConnected ? "Connected" : "Unavailable"}</strong>
-        <small>{remoteToolCount} capabilities · {remoteSessions.length} recent sessions · {unreadAttention.length} unread</small>
+        <strong>{remoteError ? remoteError : remoteConnected ? "Connected" : "Unavailable"}</strong>
+        <small>{remoteError ? "Run: cloudflared access login" : `${remoteToolCount} capabilities · ${remoteSessions.length} recent sessions · ${unreadAttention.length} unread`}</small>
       </div>
       <button class:spinning={remoteRefreshing} disabled={remoteRefreshing} aria-label="Refresh remote activity" onclick={refreshRemote}><RefreshCw size={14} /></button>
       <button aria-label="Open remote coordinator" onclick={() => native.remoteCoordinator.open()}><ChevronRight size={14} /></button>
