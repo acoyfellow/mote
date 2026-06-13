@@ -18,7 +18,7 @@ Edit a `.svelte` file. Save it. The menu-bar panel changes immediately.
 - Offline runtime after dependencies are installed
 - Cloudflare Worker documentation site built with `svelte-hono`
 
-This is an early vertical slice, not yet a Hammerspoon replacement or a signed release.
+This is an early vertical slice, not yet a signed release.
 
 ## Run from source
 
@@ -84,9 +84,9 @@ Current bridge commands:
 | `authResource` | status, refresh |
 | `remoteCoordinator` | overview, acknowledge, steer, open |
 
-The current AX surface invokes the existing scripts in `~/.hammerspoon`. This keeps the first migration reversible. Those implementations can move behind native or LaunchAgent-backed capabilities later without changing the Svelte API.
+The current AX surface invokes a neutral custom script directory at `~/.mote/scripts` by default. Those implementations can move behind native or LaunchAgent-backed capabilities later without changing the Svelte API.
 
-Employee-only resource names, endpoints, and CLI details are not part of this repository. They live in `~/.mote/config/employee.json`, a local runtime layer outside the workspace and application bundle. Public source uses only generic capability names.
+Custom resource names, endpoints, and CLI details are not part of this repository. They live in `~/.mote/config/custom.json`, a local runtime layer outside the workspace and application bundle. Public source uses only generic capability names.
 
 ## Repository
 
@@ -118,11 +118,11 @@ MOTE_SURFACE_URL=http://127.0.0.1:41732 node scripts/test-surface.mjs
 
 ## Cloudflare
 
-Mote is useful offline. Cloudflare is the optional trust and reach layer:
+Mote is useful offline. Cloudflare is optional infrastructure for connected surfaces:
 
 - **Access** authenticates people and agents reaching a personal device.
 - **Durable Objects** route one live outbound-connected Mac and its approval state.
-- **AI Gateway / Workers AI** can power optional interface co-generation.
+- **AI Gateway / Workers AI** can route optional model calls.
 - **Workers** can host explicitly reviewed connected control surfaces.
 - **R2** can hold encrypted, content-addressed bundle history.
 

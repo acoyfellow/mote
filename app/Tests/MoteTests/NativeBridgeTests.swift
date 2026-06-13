@@ -26,7 +26,7 @@ struct NativeBridgeTests {
         """
         try authCliContents.write(to: authCli, atomically: true, encoding: .utf8)
         try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: authCli.path)
-        let config = directory.appendingPathComponent("employee.json")
+        let config = directory.appendingPathComponent("custom.json")
         try JSONSerialization.data(withJSONObject: [
             "authResource": [
                 "label": "Configured auth",
@@ -38,7 +38,7 @@ struct NativeBridgeTests {
             ]
         ]).write(to: config)
         setenv("MOTE_SCRIPT_DIRECTORY", directory.path, 1)
-        setenv("MOTE_EMPLOYEE_CONFIG", config.path, 1)
+        setenv("MOTE_CUSTOM_CONFIG", config.path, 1)
     }
 
     @Test @MainActor

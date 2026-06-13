@@ -177,6 +177,14 @@
     return run(`machine-${action}`, () => native.machinectl.action(action, mode));
   }
 
+  function formatSessionTime(value?: string) {
+    if (!value) return "recent";
+    const normalized = value.includes("T") ? value : value.replace(" ", "T") + "Z";
+    const date = new Date(normalized);
+    if (Number.isNaN(date.getTime())) return "recent";
+    return date.toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  }
+
   onMount(() => {
     void loadConfiguration();
     void refreshAll();
@@ -286,7 +294,7 @@
       <div class="session-list">
         {#each remoteSessions.slice(0, 3) as session (session.id)}
           <div class="session-row">
-            <span><strong>{session.name || "Untitled session"}</strong><small>{session.status ?? "unknown"} · {session.updated_at ? new Date(session.updated_at.replace(" ", "T") + "Z").toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "recent"}</small></span>
+            <span><strong>{session.name || "Untitled session"}</strong><small>{session.status ?? "unknown"} · {formatSessionTime(session.updated_at)}</small></span>
             <button onclick={() => steeringSession = steeringSession === session.id ? null : session.id}>Steer</button>
           </div>
           {#if steeringSession === session.id}

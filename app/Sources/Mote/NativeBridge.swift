@@ -33,7 +33,7 @@ final class NativeBridge: NSObject, WKScriptMessageHandler {
             ])
         case "app.configuration":
             do {
-                let config = try EmployeeConfig.load()
+                let config = try CustomConfig.load()
                 return .success([
                     "machineLabel": config.presentation?.machineLabel ?? "Local machine",
                     "endpointLabel": config.presentation?.endpointLabel ?? "Private endpoint"
@@ -87,7 +87,7 @@ final class NativeBridge: NSObject, WKScriptMessageHandler {
             return await remoteCoordinatorRequest(operation: .inject(sessionId), method: "POST", body: ["content": content])
         case "remoteCoordinator.open":
             do {
-                let config = try EmployeeConfig.load().remoteCoordinator
+                let config = try CustomConfig.load().remoteCoordinator
                 guard let config, let url = URL(string: config.baseURL) else { return .failure("Remote coordinator is not configured") }
                 NSWorkspace.shared.open(url)
                 return .success(["opened": true])
@@ -100,7 +100,7 @@ final class NativeBridge: NSObject, WKScriptMessageHandler {
     private func runScript(name: String, arguments: [String]) async -> BridgeResult {
         let scriptDirectory = ProcessInfo.processInfo.environment["MOTE_SCRIPT_DIRECTORY"]
             .map { URL(fileURLWithPath: $0, isDirectory: true) }
-            ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".hammerspoon", isDirectory: true)
+            ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".mote/scripts", isDirectory: true)
         let timeout: TimeInterval = name == "maintenance.sh" && arguments.first == "cleanup" ? 300 : 20
         return await runCommand(
             executable: scriptDirectory.appendingPathComponent(name),
@@ -112,7 +112,7 @@ final class NativeBridge: NSObject, WKScriptMessageHandler {
 
     private func runAuthResource(refresh: Bool) async -> BridgeResult {
         do {
-            let config = try EmployeeConfig.load().authResource
+            let config = try CustomConfig.load().authResource
             let action = refresh
                 ? [config.cli] + config.refreshArguments
                 : [config.cli] + config.statusArguments
@@ -148,7 +148,7 @@ final class NativeBridge: NSObject, WKScriptMessageHandler {
         let values = await [connector, sessions, attention]
         for result in values where result.object["ok"] as? Bool != true { return result }
         do {
-            let config = try EmployeeConfig.load().remoteCoordinator
+            let config = try CustomConfig.load().remoteCoordinator
             return .success([
                 "label": config?.label ?? "Remote activity",
                 "connector": (values[0].object["value"] as? [String: Any])?["response"] ?? [:],
@@ -160,7 +160,7 @@ final class NativeBridge: NSObject, WKScriptMessageHandler {
 
     private func remoteCoordinatorRequest(operation: CoordinatorOperation, method: String = "GET", body: [String: Any]? = nil) async -> BridgeResult {
         do {
-            guard let config = try EmployeeConfig.load().remoteCoordinator else { return .failure("Remote coordinator is not configured") }
+            guard let config = try CustomConfig.load().remoteCoordinator else { return .failure("Remote coordinator is not configured") }
             let path: String
             switch operation {
             case .connectorStatus: path = config.operations.connectorStatus
@@ -189,7 +189,7 @@ final class NativeBridge: NSObject, WKScriptMessageHandler {
         } catch { return .failure(error.localizedDescription) }
     }
 
-    private func coordinatorIdentity(_ config: EmployeeConfig.RemoteCoordinator) async throws -> String {
+    private func coordinatorIdentity(_ config: CustomConfig.RemoteCoordinator) async throws -> String {
         if let cached = coordinatorToken, cached.expiresAt > Date() { return cached.value }
         if let running = coordinatorTokenTask { return try await running.value }
         let task = Task<String, Error> {

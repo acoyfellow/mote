@@ -1,6 +1,6 @@
 import Foundation
 
-struct EmployeeConfig: Decodable, Sendable {
+struct CustomConfig: Decodable, Sendable {
     struct AuthResource: Decodable, Sendable {
         let label: String
         let resourceId: String
@@ -35,17 +35,17 @@ struct EmployeeConfig: Decodable, Sendable {
     let presentation: Presentation?
     let remoteCoordinator: RemoteCoordinator?
 
-    static func load() throws -> EmployeeConfig {
-        let file = ProcessInfo.processInfo.environment["MOTE_EMPLOYEE_CONFIG"]
+    static func load() throws -> CustomConfig {
+        let file = ProcessInfo.processInfo.environment["MOTE_CUSTOM_CONFIG"]
             .map { URL(fileURLWithPath: $0) }
             ?? FileManager.default.homeDirectoryForCurrentUser
-                .appendingPathComponent(".mote/config/employee.json")
+                .appendingPathComponent(".mote/config/custom.json")
         guard FileManager.default.isReadableFile(atPath: file.path) else {
             throw ConfigError.missing(file.path)
         }
         do {
             let data = try Data(contentsOf: file)
-            return try JSONDecoder().decode(EmployeeConfig.self, from: data)
+            return try JSONDecoder().decode(CustomConfig.self, from: data)
         } catch {
             throw ConfigError.invalid(file.path, error.localizedDescription)
         }
@@ -59,9 +59,9 @@ enum ConfigError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .missing(let path):
-            "Employee configuration is not installed at \(path)"
+            "Custom configuration is not installed at \(path)"
         case .invalid(let path, let detail):
-            "Employee configuration at \(path) is invalid: \(detail)"
+            "Custom configuration at \(path) is invalid: \(detail)"
         }
     }
 }
