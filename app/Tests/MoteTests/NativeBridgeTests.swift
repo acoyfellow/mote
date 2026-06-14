@@ -67,6 +67,17 @@ struct NativeBridgeTests {
     }
 
     @Test @MainActor
+    func appConfigurationReportsConfiguredState() async throws {
+        let bridge = NativeBridge()
+        let result = await bridge.execute(command: "app.configuration", arguments: [:])
+        #expect(result.object["ok"] as? Bool == true)
+        let value = try #require(result.object["value"] as? [String: Any])
+        #expect(value["customConfigured"] as? Bool == true)
+        #expect(value["machineLabel"] as? String == "Local service")
+        #expect(value["endpointLabel"] as? String == "Optional route")
+    }
+
+    @Test @MainActor
     func configuredAuthStatusAndRefreshReturnSecretFreeMetadata() async throws {
         let bridge = NativeBridge()
         for command in ["authResource.status", "authResource.refresh", "authResource.recover"] {

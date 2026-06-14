@@ -19,6 +19,7 @@ async function invoke(command: string, arguments_: Record<string, unknown> = {})
 }
 
 function demo(command: string, arguments_: Record<string, unknown>): MoteResult {
+  if (command === "app.configuration") return { customConfigured: false, machineLabel: "Local service", endpointLabel: "Optional route" };
   if (command === "machinectl.status") return { output: "running 71193 core", exitCode: 0 };
   if (command === "reachability.status") return { output: "off sleepDisabled=0", exitCode: 0 };
   if (command === "maintenance.report") {

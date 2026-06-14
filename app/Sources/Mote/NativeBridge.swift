@@ -35,11 +35,16 @@ final class NativeBridge: NSObject, WKScriptMessageHandler {
             do {
                 let config = try CustomConfig.load()
                 return .success([
-                    "machineLabel": config.presentation?.machineLabel ?? "Local machine",
-                    "endpointLabel": config.presentation?.endpointLabel ?? "Private endpoint"
+                    "customConfigured": true,
+                    "machineLabel": config.presentation?.machineLabel ?? "Local service",
+                    "endpointLabel": config.presentation?.endpointLabel ?? "Optional route"
                 ])
             } catch {
-                return .success(["machineLabel": "Local machine", "endpointLabel": "Private endpoint"])
+                return .success([
+                    "customConfigured": false,
+                    "machineLabel": "Local service",
+                    "endpointLabel": "Optional route"
+                ])
             }
         case "app.openWorkspace":
             let path = WorkspaceLocator.resolve().path

@@ -10,8 +10,9 @@
   type AttentionItem = { id: string; title?: string; body?: string; seen_at?: string | null };
 
   let maintenanceOutput = $state("checking");
-  let machineLabel = $state("Local machine");
-  let endpointLabel = $state("Private endpoint");
+  let customConfigured = $state<boolean | null>(null);
+  let machineLabel = $state("Local service");
+  let endpointLabel = $state("Optional route");
   let authLabel = $state("Configured auth");
   let portalStatus = $state<PortalStatus>({ state: "checking" });
   let busy = $state<string | null>(null);
@@ -137,8 +138,10 @@
 
   async function loadConfiguration() {
     const config = await native.app.configuration();
-    machineLabel = String(config.machineLabel ?? "Local machine");
-    endpointLabel = String(config.endpointLabel ?? "Private endpoint");
+    customConfigured = config.customConfigured !== false;
+    machineLabel = String(config.machineLabel ?? "Local service");
+    endpointLabel = String(config.endpointLabel ?? "Optional route");
+    return customConfigured;
   }
 
   async function refreshRemote() {
@@ -179,6 +182,10 @@
   }
 
   async function refreshAll() {
+    if (customConfigured === false) {
+      const configured = await loadConfiguration();
+      if (!configured) return;
+    }
     await Promise.all([refreshCore(), refreshPortal(), refreshRemote()]);
     void refreshMaintenance();
   }
@@ -210,17 +217,18 @@
   }
 
   onMount(() => {
-    void loadConfiguration();
-    void refreshAll();
-    const statusTimer = window.setInterval(refreshCore, 30_000);
-    const maintenanceTimer = window.setInterval(refreshMaintenance, 5 * 60_000);
-    const portalTimer = window.setInterval(refreshPortal, 5 * 60_000);
-    const remoteTimer = window.setInterval(refreshRemote, 30_000);
+    const timers: number[] = [];
+    void (async () => {
+      const configured = await loadConfiguration();
+      if (!configured) return;
+      void refreshAll();
+      timers.push(window.setInterval(refreshCore, 30_000));
+      timers.push(window.setInterval(refreshMaintenance, 5 * 60_000));
+      timers.push(window.setInterval(refreshPortal, 5 * 60_000));
+      timers.push(window.setInterval(refreshRemote, 30_000));
+    })();
     return () => {
-      window.clearInterval(statusTimer);
-      window.clearInterval(maintenanceTimer);
-      window.clearInterval(portalTimer);
-      window.clearInterval(remoteTimer);
+      for (const timer of timers) window.clearInterval(timer);
     };
   });
 </script>
@@ -247,7 +255,22 @@
     </button>
   {/if}
 
-  <section class="hero-card" class:online={machineRunning}>
+  {#if customConfigured === false}
+    <section class="empty-card" aria-labelledby="empty-title">
+      <div class="empty-plate" aria-hidden="true">
+        <span></span><span></span><span></span><span></span><i></i>
+      </div>
+      <p class="specimen-label">Blank local panel</p>
+      <h1 id="empty-title">Start with an empty Svelte surface.</h1>
+      <p>Mote is installed. No custom controls are configured yet. Open the workspace, edit the Svelte files, and add only the native capabilities you need.</p>
+      <div class="empty-actions">
+        <button class="primary" onclick={() => native.app.openWorkspace()}><FolderOpen size={14} /> Open workspace</button>
+        <button onclick={() => native.app.openLogs()}><ChevronRight size={14} /> Open logs</button>
+      </div>
+      <div class="empty-path"><span>workspace/src/App.svelte</span><b>save → live panel</b></div>
+    </section>
+  {:else}
+    <section class="hero-card" class:online={machineRunning}>
     <div class="hero-glow"></div>
     <div class="card-heading">
       <div class="icon-well"><Laptop size={19} strokeWidth={1.7} /></div>
@@ -365,14 +388,15 @@
     </article>
   </section>
 
-  <button class="workspace-row" onclick={() => native.app.openWorkspace()}>
-    <span class="icon-well small"><FolderOpen size={16} /></span>
-    <span><strong>Edit this surface</strong><small>Save Svelte. See it live.</small></span>
-    <ChevronRight size={15} />
-  </button>
+    <button class="workspace-row" onclick={() => native.app.openWorkspace()}>
+      <span class="icon-well small"><FolderOpen size={16} /></span>
+      <span><strong>Edit this surface</strong><small>Save Svelte. See it live.</small></span>
+      <ChevronRight size={15} />
+    </button>
+  {/if}
 
   <footer>
-    <span><Clock3 size={12} /> {updatedAt ? `updated ${updatedAt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}` : "checking status"}</span>
+    <span><Clock3 size={12} /> {customConfigured === false ? "empty workspace" : updatedAt ? `updated ${updatedAt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}` : "checking status"}</span>
     <span>local</span>
   </footer>
 </main>
