@@ -225,7 +225,7 @@
   });
 </script>
 
-<svelte:head><title>Mote · AX</title></svelte:head>
+<svelte:head><title>Mote</title></svelte:head>
 
 <main>
   <header class="topbar">
@@ -233,7 +233,7 @@
       <span class="mote-mark"><span></span></span>
       <div>
         <strong>Mote</strong>
-        <small>AX surface</small>
+        <small>custom panel</small>
       </div>
     </div>
     <button class="icon-button" class:spinning={refreshing} disabled={refreshing} aria-label="Refresh status" onclick={refreshAll}>

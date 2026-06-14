@@ -6,67 +6,76 @@
 <Layout {path}>
   <section class="hero plate-frame">
     <div class="hero-copy">
-      <p class="eyebrow">Observation plate 01 · local control shell</p>
-      <h1>A programmable Mac surface, observed under local conditions.</h1>
-      <p class="lede">Mote is a local-first AppKit shell that runs editable Svelte surfaces over bounded native capabilities. The interface is source, the source stays on disk, and the cloud is only a condition you opt into.</p>
+      <p class="eyebrow">Local-first Mac app shell</p>
+      <h1>Build a Mac control panel in Svelte.</h1>
+      <p class="lede">Mote is a menu-bar app for local tools. The native host handles windows, permissions, and macOS APIs. Your panel is ordinary Svelte you can edit live.</p>
       <div class="actions">
-        <a class="primary" href="/docs">Read field notes →</a>
-        <a href="https://github.com/acoyfellow/mote">Inspect source</a>
+        <a class="primary" href="/docs">Read the docs →</a>
+        <a href="https://github.com/acoyfellow/mote">View source</a>
       </div>
       <div class="claim hero-claim">
-        <span class="status">Measured claim</span>
-        <h3>You can change the surface without rebuilding the native app.</h3>
-        <p>Run Mote, edit <code>workspace/src/App.svelte</code>, and save. Vite updates the web surface while the Swift host keeps running.</p>
+        <span class="status">Working prototype</span>
+        <h3>Edit Svelte. The app updates without rebuilding Swift.</h3>
+        <p>Run Mote, change <code>workspace/src/App.svelte</code>, and save. Vite updates the panel while the AppKit host keeps running.</p>
         <div class="metrics">
-          <span>Conditions <b>macOS · local workspace</b></span>
-          <span>Confidence <b>Working prototype</b></span>
-          <span>Sample size <b>AX surface + docs site</b></span>
-          <span>Reproduce <b>scripts/run.sh</b></span>
+          <span>Host <b>AppKit · WKWebView</b></span>
+          <span>Surface <b>Svelte 5 · Vite</b></span>
+          <span>Config <b>Local custom layer</b></span>
+          <span>Start <b>scripts/run.sh</b></span>
         </div>
       </div>
     </div>
 
-    <figure class="app-specimen" aria-label="Mote app panel mockup in the PARALLAX visual system">
+    <figure class="app-specimen" aria-label="Mote app panel mockup in the current visual system">
       <div class="app-grid" aria-hidden="true"></div>
-      <div class="mock-topbar"><span class="mock-mark"></span><b>mote</b><i>AX SURFACE</i><button aria-hidden="true">↻</button></div>
+      <div class="mock-topbar"><span class="mock-mark"></span><b>mote</b><i>CUSTOM PANEL</i><button aria-hidden="true">↻</button></div>
       <div class="mock-card mock-main">
-        <p>OBSERVATION PLATE · LOCAL BRIDGE</p>
-        <div class="mock-row"><span class="mock-icon">▱</span><span><small>REMOTE ACCESS</small><strong>Connected</strong></span><em><i></i>CORE</em></div>
-        <div class="mock-meta"><span>LOCAL MACHINE</span><span>PRIVATE ENDPOINT</span></div>
+        <p>LOCAL BRIDGE</p>
+        <div class="mock-row"><span class="mock-icon">▱</span><span><small>LOCAL SERVICE</small><strong>Running</strong></span><em><i></i>CORE</em></div>
+        <div class="mock-meta"><span>LOCALHOST</span><span>OPTIONAL ROUTE</span></div>
         <div class="mock-actions"><b>↻ Restart</b><span>Stop</span><u>›</u></div>
       </div>
       <div class="mock-card mock-remote">
         <div class="mock-row"><span class="mock-icon">⌁</span><span><small>REMOTE ACTIVITY</small><strong>Connected</strong><small>8 capabilities · 1 recent session · 1 unread</small></span></div>
         <div class="mock-alert"><i></i><span><b>Review requested</b><small>A remote task needs your attention.</small></span><button>Acknowledge</button></div>
       </div>
-      <figcaption class="plate-caption">Product specimen: current Mote surface style, rendered as HTML in the hero.</figcaption>
+      <figcaption class="plate-caption">Generic panel mock rendered as HTML on the homepage.</figcaption>
     </figure>
   </section>
 
   <section class="demo-reel plate-frame">
     <div class="reel-copy">
-      <p class="eyebrow">Recorded surface · local browser capture</p>
-      <h2>The app surface uses the same system.</h2>
-      <p>This is the actual Mote Svelte workspace running at panel size: local status, custom auth, remote activity, reachability, cleanup, and source handoff.</p>
-      <p class="plate-caption">Video 01: recorded from the local workspace preview. Muted, looped, no external player.</p>
+      <p class="eyebrow">Example panel</p>
+      <h2>Common Mac workflows, one panel.</h2>
+      <p>Use one Svelte panel for service control, auth recovery, remote tasks, command shortcuts, logs, files, and cleanup. This example uses placeholder data.</p>
+      <p class="plate-caption">Blueprint: placeholder data only; no private endpoints or local resource names.</p>
     </div>
-    <video autoplay muted loop playsinline preload="metadata" poster="/mote-app-demo-poster.jpg" aria-label="Short recording of the Mote app surface">
-      <source src="/mote-app-demo.mp4" type="video/mp4" />
-    </video>
+    <figure class="panel-blueprint" aria-label="Generic Mote panel blueprint with common local tool controls">
+      <div class="blueprint-top"><span class="mock-mark"></span><b>mote</b><i>CUSTOM PANEL</i></div>
+      <div class="blueprint-grid">
+        <article class="wide ok"><small>LOCAL SERVICE</small><strong>Running</strong><span>restart · stop · logs</span></article>
+        <article class="warn"><small>AUTH</small><strong>Recoverable</strong><span>refresh · recover</span></article>
+        <article><small>REMOTE TASK</small><strong>1 waiting</strong><span>ack · steer</span></article>
+        <article><small>COMMANDS</small><strong>6 shortcuts</strong><span>typed bridge calls</span></article>
+        <article><small>FILES</small><strong>Workspace</strong><span>open · edit · save</span></article>
+        <article><small>SYSTEM</small><strong>128G free</strong><span>report · cleanup</span></article>
+      </div>
+      <figcaption class="plate-caption">Generic surface: placeholder labels, no private endpoints or local resource names.</figcaption>
+    </figure>
   </section>
 
   <section class="specimen-row">
     <article class="sample-card">
-      <span class="specimen">Sample well · A</span>
-      <h2>The native host is the instrument.</h2>
-      <p>AppKit owns the status item, panel, WebKit view, permissions, logs, and bounded system capabilities. It stays small and stable.</p>
+      <span class="specimen">Native host</span>
+      <h2>Swift owns the shell.</h2>
+      <p>The app owns the status item, panel, WebKit view, permissions, logs, and bounded system access. It should stay small and stable.</p>
       <div class="instrument-crop" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
-      <p class="plate-caption">Detail crop: calibration ticks over host boundary.</p>
+      <p class="plate-caption">Boundary detail: native capability calls stay behind named bridge methods.</p>
     </article>
     <article class="sample-card cyan-field">
-      <span class="specimen">Sample well · B</span>
-      <h2>The workspace is the artifact.</h2>
-      <p>A Mote surface is an ordinary Svelte project. Save a file; the panel reloads. The artifact is inspectable source, not a transcript.</p>
+      <span class="specimen">Editable workspace</span>
+      <h2>Svelte owns the surface.</h2>
+      <p>A Mote panel is an ordinary local Svelte project. Save a file; the panel reloads. The product behavior lives in source you can inspect.</p>
       <pre>workspace/src/App.svelte
 workspace/src/style.css
 workspace/src/lib/native.ts</pre>
@@ -75,33 +84,33 @@ workspace/src/lib/native.ts</pre>
 
   <section class="method plate-frame">
     <div>
-      <p class="eyebrow">Observed edit loop</p>
-      <h2>Edit the source. Reload the surface. Keep the path back.</h2>
-      <p>Mote keeps the product loop close to normal application development: source files, a local compiler, typed APIs, preview, and rollback.</p>
+      <p class="eyebrow">Edit loop</p>
+      <h2>Change the panel like any other frontend.</h2>
+      <p>Keep layout, state, and product workflows in Svelte. Keep privileged system access behind explicit native capabilities.</p>
     </div>
     <div class="method-steps">
-      <article><span>01</span><h3>Describe the surface</h3><p>Write Svelte by hand or ask an agent for a source patch.</p></article>
-      <article><span>02</span><h3>Check the specimen</h3><p>Compile locally, preview in the same WebKit shell, and keep last-known-good.</p></article>
-      <article><span>03</span><h3>Grant capabilities</h3><p>Use named bridge methods instead of ambient shell authority.</p></article>
-      <article><span>04</span><h3>Check the boundary</h3><p>If editing requires a hidden service, move that dependency into an explicit integration.</p></article>
+      <article><span>01</span><h3>Edit Svelte</h3><p>Change the panel by hand, or ask an agent to propose a source patch.</p></article>
+      <article><span>02</span><h3>Compile locally</h3><p>Preview in the same WebKit shell and keep a last-known-good build.</p></article>
+      <article><span>03</span><h3>Call named APIs</h3><p>Use typed bridge methods instead of giving the webview shell access.</p></article>
+      <article><span>04</span><h3>Roll back</h3><p>If a change breaks the panel, return to the last working workspace state.</p></article>
     </div>
   </section>
 
   <section class="cloud-measurement">
     <div class="claim">
-      <span class="status">Optional condition</span>
-      <h3>Cloudflare is optional infrastructure.</h3>
-      <p>Mote runs locally after dependencies are installed. If a surface needs login, remote access, routing, or model calls, those pieces can be wired through Cloudflare without changing the local edit loop.</p>
+      <span class="status">Connected services</span>
+      <h3>Add Cloudflare when a panel needs the network.</h3>
+      <p>Mote runs locally after dependencies are installed. If a panel needs login, remote access, routing, or model calls, those pieces can be wired in without changing the local edit loop.</p>
       <div class="metrics">
-        <span>Identity <b>Access</b></span>
+        <span>Login <b>Access</b></span>
         <span>Routing <b>Durable Objects</b></span>
         <span>Model calls <b>AI Gateway</b></span>
         <span>Hosting <b>Workers</b></span>
       </div>
     </div>
-    <figure class="strip" aria-label="Cyan spectral strips for optional cloud capabilities">
+    <figure class="strip" aria-label="Cyan bands representing optional connected services">
       <div></div><div></div><div></div><div></div>
-      <figcaption class="plate-caption">Plate 02: optional connected services shown as cyan spectral bands.</figcaption>
+      <figcaption class="plate-caption">Optional connected services. The local app does not depend on them to run.</figcaption>
     </figure>
   </section>
 </Layout>
@@ -115,10 +124,12 @@ workspace/src/lib/native.ts</pre>
   }
   .hero {
     max-width: 1184px;
-    min-height: 690px;
     margin: 28px auto 0;
-    padding: 56px;
-    display: block;
+    padding: 46px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 438px);
+    gap: 44px;
+    align-items: center;
     overflow: hidden;
   }
   .hero::before, .hero::after, .method::before, .method::after {
@@ -131,31 +142,28 @@ workspace/src/lib/native.ts</pre>
   }
   .hero::before, .method::before { left: 14px; top: 14px; border-left: 1px solid; border-top: 1px solid; }
   .hero::after, .method::after { right: 14px; bottom: 14px; border-right: 1px solid; border-bottom: 1px solid; }
-  .hero-copy { position: relative; z-index: 2; max-width: 720px; }
+  .hero-copy { position: relative; z-index: 2; max-width: 620px; }
   h1 {
-    max-width: 720px;
-    margin: 20px 0 22px;
+    max-width: 620px;
+    margin: 18px 0 20px;
     color: var(--teal);
-    font-size: clamp(3.4rem, 7vw, 6.3rem);
-    line-height: .94;
-    letter-spacing: -.06em;
+    font-size: clamp(3rem, 5vw, 4.85rem);
+    line-height: .97;
+    letter-spacing: -.055em;
   }
-  .lede { max-width: 58ch; color: rgba(23,32,25,.72); font-size: 17px; }
+  .lede { max-width: 50ch; color: rgba(23,32,25,.72); font-size: 16px; }
   .actions { display: flex; align-items: center; flex-wrap: wrap; gap: 20px; margin: 28px 0; font: 700 11px var(--mono); text-transform: uppercase; letter-spacing: .1em; }
   .actions a { color: var(--teal); }
   .actions .primary { padding: 11px 14px; border: 1px solid var(--teal); background: var(--paper-well); }
   .hero-claim p { margin-bottom: 0; color: rgba(23,32,25,.68); font-size: 13px; }
   .app-specimen {
-    position: absolute;
-    right: 38px;
-    top: 118px;
-    width: min(438px, 41%);
+    position: relative;
+    width: 100%;
     margin: 0;
     padding: 18px;
     border: 1px solid rgba(7,92,89,.24);
     background: rgba(251,247,234,.78);
     box-shadow: 0 20px 60px rgba(23,32,25,.08), inset 0 0 0 1px rgba(255,255,255,.45);
-    transform: rotate(.4deg);
   }
   .app-grid { position: absolute; inset: 0; opacity: .5; background: linear-gradient(rgba(7,92,89,.055) 1px, transparent 1px) 0 0 / 22px 22px, linear-gradient(90deg, rgba(7,92,89,.055) 1px, transparent 1px) 0 0 / 22px 22px; pointer-events: none; }
   .mock-topbar, .mock-card, .app-specimen figcaption { position: relative; z-index: 1; }
@@ -194,14 +202,35 @@ workspace/src/lib/native.ts</pre>
     align-items: center;
   }
   .reel-copy p:not(.eyebrow):not(.plate-caption) { color: rgba(23,32,25,.68); max-width: 48ch; }
-  .demo-reel video {
-    width: min(100%, 390px);
-    justify-self: center;
-    display: block;
+  .panel-blueprint {
+    margin: 0;
+    padding: 18px;
     border: 1px solid var(--line);
-    background: var(--paper-well);
-    box-shadow: 0 18px 50px rgba(23,32,25,.1);
+    background:
+      linear-gradient(rgba(7,92,89,.05) 1px, transparent 1px) 0 0 / 22px 22px,
+      linear-gradient(90deg, rgba(7,92,89,.05) 1px, transparent 1px) 0 0 / 22px 22px,
+      rgba(251,247,234,.82);
+    box-shadow: 0 18px 50px rgba(23,32,25,.1), inset 0 0 0 1px rgba(255,255,255,.5);
   }
+  .blueprint-top { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; color: var(--teal); font: 800 11px var(--mono); }
+  .blueprint-top i { color: rgba(23,32,25,.58); font: 700 8px var(--mono); font-style: normal; letter-spacing: .12em; }
+  .blueprint-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+  .blueprint-grid article {
+    min-height: 108px;
+    padding: 13px;
+    border: 1px solid var(--line);
+    background: rgba(251,247,234,.78);
+    display: grid;
+    align-content: start;
+    gap: 7px;
+  }
+  .blueprint-grid article.wide { grid-column: span 2; }
+  .blueprint-grid small { color: rgba(23,32,25,.58); font: 700 8px var(--mono); letter-spacing: .11em; }
+  .blueprint-grid strong { color: var(--carbon); font-size: 18px; letter-spacing: -.03em; }
+  .blueprint-grid span { color: var(--teal); font: 700 9px var(--mono); }
+  .blueprint-grid .ok { background: rgba(22,184,176,.12); }
+  .blueprint-grid .warn { position: relative; }
+  .blueprint-grid .warn::after { content: ""; position: absolute; top: 13px; right: 13px; width: 8px; height: 8px; border-radius: 50%; background: var(--vermilion); box-shadow: 0 0 0 5px rgba(255,90,54,.12); }
   .specimen-row {
     max-width: 1128px;
     margin: 64px auto 0;
@@ -215,7 +244,7 @@ workspace/src/lib/native.ts</pre>
     border: 1px solid var(--line);
     background: rgba(251,247,234,.68);
   }
-  .sample-card h2 { max-width: 10ch; margin-top: 20px; font-size: clamp(2.2rem, 4vw, 3.8rem); }
+  .sample-card h2 { max-width: 12ch; margin-top: 20px; font-size: clamp(2.2rem, 4vw, 3.8rem); }
   .sample-card p { color: rgba(23,32,25,.68); max-width: 52ch; }
   .cyan-field {
     background:
@@ -273,13 +302,13 @@ workspace/src/lib/native.ts</pre>
   @media(max-width:900px) {
     .hero, .method, .cloud-measurement, .demo-reel { grid-template-columns: 1fr; margin-inline: 20px; padding: 24px; }
     .specimen-row { grid-template-columns: 1fr; margin-inline: 20px; }
-    .app-specimen { position: relative; inset: auto; width: 100%; margin-top: 28px; transform: none; }
+    .app-specimen { width: 100%; margin-top: 8px; }
     .method-steps { grid-template-columns: 1fr; }
     .method-steps article, .method-steps article:nth-child(2n), .method-steps article:nth-last-child(-n+2) { border-right: 0; border-bottom: 1px solid var(--line); }
     .method-steps article:last-child { border-bottom: 0; }
   }
   @media(max-width:560px) {
-    h1 { font-size: 3rem; }
+    h1 { font-size: 3.2rem; }
     .hero, .method { padding: 20px; }
     .app-specimen { padding: 12px; }
     .mock-alert { align-items: flex-start; }

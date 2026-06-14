@@ -1,6 +1,6 @@
 # Mote
 
-**A programmable personal edge.**
+**A programmable Mac control shell.**
 
 Mote is a local-first application shell for macOS. It gives editable Svelte interfaces controlled access to native capabilities, so personal tools can change without recompiling the native app.
 
@@ -12,7 +12,7 @@ Edit a `.svelte` file. Save it. The menu-bar panel changes immediately.
 - Svelte 5 interface inside `WKWebView`
 - Vite hot-module reload from a local workspace
 - Promise-based Swift ↔ JavaScript bridge
-- Bounded local controls for the current AX surface
+- Bounded local controls for a custom panel
 - Configured remote-activity inbox with connector health, recent sessions, attention acknowledgements, and session steering
 - Native right-click recovery menu
 - Offline runtime after dependencies are installed
@@ -81,10 +81,10 @@ Current bridge commands:
 | `machinectl` | status, start, stop, restart |
 | `reachability` | status, start, stop |
 | `maintenance` | report, cleanup |
-| `authResource` | status, refresh |
+| `authResource` | status, refresh, recover |
 | `remoteCoordinator` | overview, acknowledge, steer, open |
 
-The current AX surface invokes a neutral custom script directory at `~/.mote/scripts` by default. Those implementations can move behind native or LaunchAgent-backed capabilities later without changing the Svelte API.
+The current custom surface invokes a neutral custom script directory at `~/.mote/scripts` by default. Those implementations can move behind native or LaunchAgent-backed capabilities later without changing the Svelte API.
 
 Custom resource names, endpoints, and CLI details are not part of this repository. They live in `~/.mote/config/custom.json`, a local runtime layer outside the workspace and application bundle. Public source uses only generic capability names.
 

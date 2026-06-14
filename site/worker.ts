@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { attachSvelteRoutes, svelteRenderer } from "svelte-hono";
 import { bundles } from "./bundles.generated.js";
-import { APP_DEMO_MP4, APP_DEMO_POSTER_JPG, APPLE_TOUCH_ICON_PNG, ICON_192_PNG, ICON_512_PNG, OG_IMAGE_PNG } from "./generated-media.js";
+import { APPLE_TOUCH_ICON_PNG, ICON_192_PNG, ICON_512_PNG, OG_IMAGE_PNG } from "./generated-media.js";
 import Home from "./Home.svelte";
 import Docs from "./Docs.svelte";
 
@@ -10,7 +10,8 @@ attachSvelteRoutes(app, { bundles });
 
 const origin = "https://mote.coey.dev";
 const siteName = "Mote";
-const description = "Mote is a local-first Svelte shell for native macOS capabilities: editable source files, a small AppKit host, and bounded custom integrations.";
+const description = "Mote is a local-first Mac app shell for editable Svelte control panels, bounded native capabilities, and optional connected services.";
+const assetVersion = "20260614";
 const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" fill="#f3efe2"/><path d="M6.5 6.5h19v19h-19z" fill="none" stroke="#075c59"/><path d="M10 16h12M16 10v12" stroke="#075c59" stroke-width="1.2"/><circle cx="16" cy="16" r="2.5" fill="#16b8b0"/><circle cx="21" cy="21" r="1.8" fill="#ff5a36"/></svg>`;
 
 function structuredData(path: string, title: string, pageDescription: string) {
@@ -34,17 +35,6 @@ function structuredData(path: string, title: string, pageDescription: string) {
       offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
     },
   ];
-  if (path === "/") {
-    graph.push({
-      "@type": "VideoObject",
-      name: "Mote app surface demo",
-      description: "A short recording of the Mote Svelte surface running at panel size.",
-      thumbnailUrl: `${origin}/mote-app-demo-poster.jpg`,
-      contentUrl: `${origin}/mote-app-demo.mp4`,
-      uploadDate: "2026-06-13",
-      duration: "PT5S",
-    });
-  }
   return JSON.stringify({ "@context": "https://schema.org", "@graph": graph });
 }
 
@@ -73,31 +63,31 @@ const head = (path: string, title: string, pageDescription = description) => `
 <meta property="og:description" content="${pageDescription}">
 <meta property="og:type" content="website">
 <meta property="og:url" content="${origin}${path}">
-<meta property="og:image" content="${origin}/og.png">
-<meta property="og:image:secure_url" content="${origin}/og.png">
+<meta property="og:image" content="${origin}/og.png?v=${assetVersion}">
+<meta property="og:image:secure_url" content="${origin}/og.png?v=${assetVersion}">
 <meta property="og:image:type" content="image/png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Mote observation plate: editable Svelte surfaces over bounded native capabilities.">
+<meta property="og:image:alt" content="Mote homepage preview: a local Mac control panel built with Svelte.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${title}">
 <meta name="twitter:description" content="${pageDescription}">
-<meta name="twitter:image" content="${origin}/og.png">
-<meta name="twitter:image:alt" content="Mote observation plate: editable Svelte surfaces over bounded native capabilities.">
+<meta name="twitter:image" content="${origin}/og.png?v=${assetVersion}">
+<meta name="twitter:image:alt" content="Mote homepage preview: a local Mac control panel built with Svelte.">
 <script type="application/ld+json">${structuredData(path, title, pageDescription)}</script>
 `;
 
 app.get("/", svelteRenderer(Home, {
   hydrateAs: "home",
-  title: "Mote — Observed local software",
-  head: head("/", "Mote — Observed local software"),
+  title: "Mote — Mac control panels in Svelte",
+  head: head("/", "Mote — Mac control panels in Svelte"),
   props: { path: "/" },
 }));
 
 app.get("/docs", svelteRenderer(Docs, {
   hydrateAs: "docs",
-  title: "Field notes — Mote",
-  head: head("/docs", "Mote field notes", "Field notes for Mote: architecture, local workspace, custom configuration, native bridge, and the PARALLAX visual system."),
+  title: "Docs — Mote",
+  head: head("/docs", "Mote docs", "Docs for Mote: architecture, local workspace, custom configuration, native bridge, and the visual system."),
   props: { path: "/docs" },
 }));
 
@@ -124,9 +114,8 @@ app.get("/icon-192.png", () => png(ICON_192_PNG));
 app.get("/icon-512.png", () => png(ICON_512_PNG));
 app.get("/apple-touch-icon.png", () => png(APPLE_TOUCH_ICON_PNG));
 app.get("/og.png", () => png(OG_IMAGE_PNG, 86_400));
-app.get("/mote-app-demo.mp4", () => media(APP_DEMO_MP4, "video/mp4", 86_400));
-app.get("/mote-app-demo-poster.jpg", () => media(APP_DEMO_POSTER_JPG, "image/jpeg", 86_400));
-app.get("/og.svg", (c) => c.body(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630"><defs><pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse"><path d="M32 0H0V32" fill="none" stroke="#075C59" stroke-opacity=".12"/></pattern><pattern id="wells" width="42" height="42" patternUnits="userSpaceOnUse"><circle cx="21" cy="21" r="7" fill="none" stroke="#16B8B0" stroke-opacity=".55"/></pattern></defs><rect width="1200" height="630" fill="#F3EFE2"/><rect width="1200" height="630" fill="url(#grid)"/><rect x="70" y="62" width="1060" height="506" fill="#FBF7EA" stroke="#075C59" stroke-opacity=".45"/><rect x="650" y="118" width="396" height="290" fill="url(#wells)" opacity=".7"/><path d="M684 354C752 302 832 330 902 242S982 166 1038 196" fill="none" stroke="#075C59" stroke-width="4"/><circle cx="938" cy="214" r="10" fill="#FF5A36"/><text x="110" y="128" font-family="ui-monospace, monospace" font-size="18" font-weight="700" fill="#075C59" letter-spacing="3">OBSERVATION PLATE · MOTE</text><text x="110" y="306" font-family="system-ui, sans-serif" font-size="72" font-weight="720" fill="#075C59" letter-spacing="-4">Observed local software.</text><text x="114" y="365" font-family="system-ui, sans-serif" font-size="28" fill="#172019">Editable Svelte surfaces over bounded native capabilities.</text><text x="114" y="500" font-family="ui-monospace, monospace" font-size="18" fill="#075C59" letter-spacing="2">CONDITION · LOCAL-FIRST · SOURCE OWNED</text></svg>`, 200, { "content-type": "image/svg+xml", "cache-control": "public, max-age=86400" }));
+
+app.get("/og.svg", (c) => c.body(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630"><defs><pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse"><path d="M32 0H0V32" fill="none" stroke="#075C59" stroke-opacity=".12"/></pattern><pattern id="wells" width="42" height="42" patternUnits="userSpaceOnUse"><circle cx="21" cy="21" r="7" fill="none" stroke="#16B8B0" stroke-opacity=".55"/></pattern></defs><rect width="1200" height="630" fill="#F3EFE2"/><rect width="1200" height="630" fill="url(#grid)"/><rect x="70" y="62" width="1060" height="506" fill="#FBF7EA" stroke="#075C59" stroke-opacity=".45"/><rect x="666" y="126" width="382" height="286" fill="url(#wells)" opacity=".65"/><rect x="712" y="174" width="264" height="64" fill="#FBF7EA" stroke="#075C59" stroke-opacity=".5"/><rect x="712" y="266" width="264" height="84" fill="#FBF7EA" stroke="#075C59" stroke-opacity=".5"/><circle cx="742" cy="308" r="8" fill="#FF5A36"/><text x="110" y="128" font-family="ui-monospace, monospace" font-size="18" font-weight="700" fill="#075C59" letter-spacing="3">MOTE · LOCAL MAC APP SHELL</text><text x="110" y="280" font-family="system-ui, sans-serif" font-size="72" font-weight="720" fill="#075C59" letter-spacing="-4">Build a Mac control</text><text x="110" y="358" font-family="system-ui, sans-serif" font-size="72" font-weight="720" fill="#075C59" letter-spacing="-4">panel in Svelte.</text><text x="114" y="426" font-family="system-ui, sans-serif" font-size="28" fill="#172019">Editable source files. Bounded native capabilities.</text><text x="114" y="506" font-family="ui-monospace, monospace" font-size="18" fill="#075C59" letter-spacing="2">APPKIT · WKWEBVIEW · SVELTE · LOCAL WORKSPACE</text></svg>`, 200, { "content-type": "image/svg+xml", "cache-control": "public, max-age=86400" }));
 app.get("/robots.txt", (c) => c.text("User-agent: *\nAllow: /\nSitemap: https://mote.coey.dev/sitemap.xml\n", 200, { "content-type": "text/plain; charset=utf-8" }));
 app.get("/sitemap.xml", () => new Response(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https://mote.coey.dev/</loc><lastmod>2026-06-13</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url><url><loc>https://mote.coey.dev/docs</loc><lastmod>2026-06-13</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url></urlset>`, { headers: { "content-type": "application/xml; charset=utf-8", "cache-control": "public, max-age=3600" } }));
 app.get("/manifest.webmanifest", (c) => c.json({
@@ -149,7 +138,7 @@ app.get("/manifest.webmanifest", (c) => c.json({
     { src: "/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" },
   ],
   shortcuts: [
-    { name: "Field notes", short_name: "Docs", url: "/docs", description: "Read Mote architecture and setup notes." },
+    { name: "Docs", short_name: "Docs", url: "/docs", description: "Read Mote architecture and setup notes." },
   ],
   prefer_related_applications: false,
 }, 200, { "content-type": "application/manifest+json; charset=utf-8", "cache-control": "public, max-age=3600" }));

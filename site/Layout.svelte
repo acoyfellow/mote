@@ -10,8 +10,8 @@
     <b>mote</b>
   </a>
   <nav aria-label="Primary">
-    <a class:active={path === "/"} href="/">Observation</a>
-    <a class:active={path === "/docs"} href="/docs">Field notes</a>
+    <a class:active={path === "/"} href="/">Home</a>
+    <a class:active={path === "/docs"} href="/docs">Docs</a>
     <a href="https://github.com/acoyfellow/mote">Source <span>↗</span></a>
   </nav>
 </header>
@@ -20,7 +20,7 @@
 
 <footer>
   <div class="brand"><span class="plate-mark small"><i></i></span><b>mote</b></div>
-  <p>Observed locally. Connected only when conditions require it.</p>
+  <p>Runs locally. Connects when needed.</p>
   <a href="https://coey.dev">@acoyfellow</a>
 </footer>
 
@@ -148,7 +148,7 @@
   .plate-mark::before, .plate-mark::after { content: ""; position: absolute; background: var(--teal); opacity: .68; }
   .plate-mark::before { width: 15px; height: 1px; }
   .plate-mark::after { width: 1px; height: 15px; }
-  .plate-mark i { width: 5px; height: 5px; border-radius: 50%; background: var(--cyan); z-index: 1; }
+  .plate-mark i { width: 6px; height: 6px; background: var(--cyan); border-radius: 50%; z-index: 1; }
   .plate-mark.small { width: 24px; height: 24px; }
   nav { display: flex; align-items: center; gap: 26px; }
   nav a { color: rgba(23,32,25,.62); font: 700 11px var(--mono); text-transform: uppercase; letter-spacing: .1em; }

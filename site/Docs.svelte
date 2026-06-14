@@ -6,8 +6,7 @@
 <Layout {path}>
   <div class="docs-shell">
     <aside>
-      <p>Mote field notes</p>
-      <a href="#brand">Brand system</a>
+      <p>Mote docs</p>
       <a href="#start">Run prototype</a>
       <a href="#workspace">Workspace</a>
       <a href="#bridge">Native bridge</a>
@@ -16,41 +15,16 @@
     </aside>
 
     <article>
-      <p class="eyebrow">Field notebook · Mote 0.1</p>
-      <h1>A local Svelte shell for native macOS capabilities.</h1>
-      <p class="intro">These notes describe the current working specimen: an AppKit status item and panel, a WKWebView, a local Vite/Svelte runtime, and a typed bridge to bounded native capabilities.</p>
-
-      <section id="brand" class="plate-section">
-        <div class="section-head">
-          <span class="specimen">Observation system</span>
-          <h2>PARALLAX, adjusted for Mote.</h2>
-          <p>Mote borrows the language of scientific observation, then makes it personal: the Mac is the runtime, the Svelte workspace is the artifact, and every claim includes a reproduction handle.</p>
+      <section class="docs-hero plate-section">
+        <p class="eyebrow">Mote 0.1</p>
+        <h1>Run it locally. Change it live.</h1>
+        <p class="intro">Mote is a working prototype: an AppKit status item and panel, a WKWebView, a local Vite/Svelte workspace, and a typed bridge to bounded native capabilities.</p>
+        <div class="metrics hero-metrics">
+          <span>Host <b>AppKit · WKWebView</b></span>
+          <span>Surface <b>Svelte 5 · Vite</b></span>
+          <span>Bridge <b>Typed native calls</b></span>
+          <span>Config <b>Local custom layer</b></span>
         </div>
-        <div class="brand-grid">
-          <div class="palette">
-            <div><i class="swatch teal"></i><span>Cold teal ink</span><b>#075C59</b><small>Structure, rails, labels, hard edges.</small></div>
-            <div><i class="swatch cyan"></i><span>Cyan samples</span><b>#16B8B0</b><small>Measurements, wells, confidence bands.</small></div>
-            <div><i class="swatch vermilion"></i><span>Vermilion anomaly</span><b>#FF5A36</b><small>One visible failure mark per view.</small></div>
-            <div><i class="swatch carbon"></i><span>Carbon text</span><b>#172019</b><small>Body copy, code, durable facts.</small></div>
-          </div>
-          <div class="claim">
-            <span class="status">Measured voice</span>
-            <h3>State what was tested, what happened, and how to run it again.</h3>
-            <p>Use compact engineering-note pacing: condition, sample, confidence, reproduction handle, and known limits. Avoid theatrical typography, decorative gradients, and accent colors outside the palette.</p>
-            <div class="metrics">
-              <span>Spacing <b>8px base grid</b></span>
-              <span>Typography <b>System sans + mono labels</b></span>
-              <span>Pacing <b>Claim → evidence → steps</b></span>
-              <span>Surface <b>Plate, rail, sample, caption</b></span>
-            </div>
-          </div>
-        </div>
-        <figure class="detail-plate" aria-label="Instrument detail plate made from HTML and CSS">
-          <div class="rail"></div>
-          <div class="wells"></div>
-          <div class="bands"><i></i><i></i><i></i><i></i></div>
-          <figcaption class="plate-caption">Plate 03: texture field and instrument detail crop. Provenance: HTML/CSS plate; all words are accessible HTML.</figcaption>
-        </figure>
       </section>
 
       <section id="start">
@@ -66,8 +40,8 @@ cd ..
       </section>
 
       <section id="workspace">
-        <h2>The workspace is the artifact</h2>
-        <p>A Mote surface is an ordinary local Svelte project. There is no proprietary document format and no cloud round-trip in the edit loop.</p>
+        <h2>The workspace is the product surface.</h2>
+        <p>A Mote panel is an ordinary local Svelte project. There is no proprietary document format and no cloud round-trip in the edit loop.</p>
         <pre>workspace/
 ├── package.json
 ├── vite.config.ts
@@ -76,9 +50,9 @@ cd ..
     ├── style.css        # visual language
     └── lib/native.ts    # typed host bindings</pre>
         <div class="claim inline">
-          <span class="status">Offline condition</span>
-          <h3>After dependencies exist locally, the edit loop keeps working without a network connection.</h3>
-          <div class="metrics"><span>Reproduce <b>Turn Wi‑Fi off, save Svelte</b></span><span>Known limit <b>New installs still need dependencies</b></span></div>
+          <span class="status">Local edit loop</span>
+          <h3>After dependencies exist locally, editing the panel does not require the network.</h3>
+          <div class="metrics"><span>Try it <b>Turn Wi‑Fi off, save Svelte</b></span><span>Known limit <b>New installs still fetch dependencies</b></span></div>
         </div>
       </section>
 
@@ -91,7 +65,7 @@ const status = await native.machinectl.status();
 
 await native.machinectl.action("restart", "core");
 await native.reachability.start(8 * 60 * 60);</pre>
-        <table><thead><tr><th>Namespace</th><th>Commands</th></tr></thead><tbody><tr><td><code>app</code></td><td>info, configuration, open workspace, open logs</td></tr><tr><td><code>machinectl</code></td><td>status, start, stop, restart</td></tr><tr><td><code>reachability</code></td><td>status, start, stop</td></tr><tr><td><code>maintenance</code></td><td>report, cleanup</td></tr><tr><td><code>authResource</code></td><td>status, refresh</td></tr><tr><td><code>remoteCoordinator</code></td><td>overview, acknowledge, steer, open</td></tr></tbody></table>
+        <table><thead><tr><th>Namespace</th><th>Commands</th></tr></thead><tbody><tr><td><code>app</code></td><td>info, configuration, open workspace, open logs</td></tr><tr><td><code>machinectl</code></td><td>status, start, stop, restart</td></tr><tr><td><code>reachability</code></td><td>status, start, stop</td></tr><tr><td><code>maintenance</code></td><td>report, cleanup</td></tr><tr><td><code>authResource</code></td><td>status, refresh, recover</td></tr><tr><td><code>remoteCoordinator</code></td><td>overview, acknowledge, steer, open</td></tr></tbody></table>
       </section>
 
       <section id="custom">
@@ -123,7 +97,7 @@ await native.reachability.start(8 * 60 * 60);</pre>
         </ol>
       </section>
 
-      <div class="end"><p class="specimen">END OF CURRENT SPECIMEN</p><a href="https://github.com/acoyfellow/mote">Read the source →</a></div>
+      <div class="end"><p class="specimen">End of current docs</p><a href="https://github.com/acoyfellow/mote">Read the source →</a></div>
     </article>
   </div>
 </Layout>
@@ -134,31 +108,45 @@ await native.reachability.start(8 * 60 * 60);</pre>
   aside p { margin: 0 0 12px; color: var(--teal); font: 700 10px var(--mono); text-transform: uppercase; letter-spacing: .12em; }
   aside a { color: rgba(23,32,25,.62); font: 11px/1.7 var(--mono); padding: 3px 0; }
   aside a:hover { color: var(--teal); }
-  article { max-width: 820px; }
-  h1 { margin: 18px 0 20px; max-width: 760px; color: var(--teal); font-size: clamp(2.85rem, 6.2vw, 5.1rem); line-height: .98; letter-spacing: -.055em; }
+  article { max-width: 860px; }
+  h1 {
+    margin: 18px 0 20px;
+    max-width: 760px;
+    color: var(--teal);
+    font-size: clamp(3.6rem, 7vw, 6.2rem);
+    line-height: .94;
+    letter-spacing: -.065em;
+  }
   .intro { color: rgba(23,32,25,.7); font-size: 18px; max-width: 65ch; }
-  section { margin-top: 64px; padding-top: 44px; border-top: 1px solid var(--line); }
+  section {
+    position: relative;
+    margin-top: 34px;
+    padding: 30px;
+    border: 1px solid var(--line);
+    background: rgba(251,247,234,.66);
+    box-shadow: 0 18px 50px rgba(23,32,25,.06), inset 0 0 0 1px rgba(255,255,255,.45);
+  }
+  section::before, section::after {
+    content: "";
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    border-color: var(--teal);
+    opacity: .42;
+  }
+  section::before { left: 14px; top: 14px; border-left: 1px solid; border-top: 1px solid; }
+  section::after { right: 14px; bottom: 14px; border-right: 1px solid; border-bottom: 1px solid; }
+  section h2 {
+    margin: 0 0 18px;
+    max-width: 700px;
+    color: var(--teal);
+    font-size: clamp(2.7rem, 5.4vw, 4.5rem);
+    line-height: .96;
+    letter-spacing: -.058em;
+  }
   section > p { color: rgba(23,32,25,.68); max-width: 68ch; }
-  .plate-section { border: 1px solid var(--line); padding: 28px; background: rgba(251,247,234,.66); }
-  .section-head p { color: rgba(23,32,25,.68); }
-  .brand-grid { display: grid; grid-template-columns: .9fr 1.1fr; gap: 22px; margin-top: 26px; }
-  .palette { border: 1px solid var(--line); background: var(--paper-well); }
-  .palette div { display: grid; grid-template-columns: 28px 1fr auto; gap: 10px; align-items: center; padding: 14px; border-bottom: 1px solid var(--line-soft); }
-  .palette div:last-child { border-bottom: 0; }
-  .palette span { color: var(--carbon); font-weight: 750; }
-  .palette b { color: rgba(23,32,25,.62); font: 10px var(--mono); }
-  .palette small { grid-column: 2 / -1; color: rgba(23,32,25,.58); font-size: 12px; }
-  .swatch { width: 22px; height: 22px; display: block; border: 1px solid rgba(23,32,25,.18); }
-  .teal { background: var(--teal); }
-  .cyan { background: var(--cyan); }
-  .vermilion { background: var(--vermilion); }
-  .carbon { background: var(--carbon); }
-  .detail-plate { position: relative; margin: 24px 0 0; padding: 18px; min-height: 240px; border: 1px solid var(--line); background: linear-gradient(rgba(7,92,89,.06) 1px, transparent 1px) 0 0 / 20px 20px, linear-gradient(90deg, rgba(7,92,89,.06) 1px, transparent 1px) 0 0 / 20px 20px, var(--paper-well); display: grid; grid-template-columns: 72px 1fr 1.2fr; gap: 18px; }
-  .rail { border-left: 1px solid var(--teal); background: repeating-linear-gradient(0deg, var(--teal) 0 1px, transparent 1px 11px); opacity: .72; }
-  .wells { border: 1px solid var(--line); background: radial-gradient(circle, transparent 0 7px, rgba(22,184,176,.45) 7px 8px, transparent 9px) 0 0 / 34px 34px; }
-  .bands { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
-  .bands i { border: 1px solid var(--line-soft); background: repeating-linear-gradient(0deg, rgba(22,184,176,.18) 0 14px, rgba(22,184,176,.055) 14px 28px); }
-  .detail-plate figcaption { grid-column: 1 / -1; }
+  .docs-hero { margin-top: 0; }
+  .hero-metrics { margin-top: 24px; }
   .inline { margin-top: 18px; }
   table { width: 100%; border-collapse: collapse; margin: 24px 0; background: rgba(251,247,234,.55); }
   th, td { text-align: left; padding: 12px; border: 1px solid var(--line-soft); font-size: 12px; }
@@ -174,5 +162,11 @@ await native.reachability.start(8 * 60 * 60);</pre>
   .end { margin-top: 80px; padding: 24px; border: 1px solid var(--line); text-align: center; background: rgba(251,247,234,.62); }
   .end p { margin-bottom: 12px; }
   .end a { color: var(--teal); font: 700 11px var(--mono); text-transform: uppercase; letter-spacing: .1em; }
-  @media(max-width:840px) { .docs-shell { display:block; margin:0 20px; padding-top:42px; } aside { display:none; } .brand-grid, .detail-plate { grid-template-columns:1fr; } h1 { font-size:3.1rem; } }
+  @media(max-width:840px) {
+    .docs-shell { display:block; margin:0 20px; padding-top:42px; }
+    aside { display:none; }
+    section { padding: 22px; }
+    h1 { font-size:3.5rem; }
+    section h2 { font-size: 3rem; }
+  }
 </style>

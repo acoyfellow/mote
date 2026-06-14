@@ -128,7 +128,7 @@ button:disabled { opacity: .48; }
   min-height: 132px;
 }
 .hero-card::before {
-  content: "OBSERVATION PLATE · LOCAL BRIDGE";
+  content: "LOCAL BRIDGE";
   display: block;
   margin-bottom: 13px;
   color: var(--teal);
