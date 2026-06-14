@@ -8,6 +8,7 @@ struct CustomConfig: Decodable, Sendable {
         let cli: String
         let statusArguments: [String]
         let refreshArguments: [String]
+        let recoverArguments: [String]?
     }
 
     struct Presentation: Decodable, Sendable {

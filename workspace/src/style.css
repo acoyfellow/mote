@@ -193,6 +193,21 @@ button:disabled { opacity: .48; }
 .portal-state { display: flex; align-items: center; gap: 5px; color: var(--teal); font: 700 7px var(--mono); text-transform: uppercase; letter-spacing: .08em; }
 .portal-state i { width: 5px; height: 5px; border-radius: 50%; background: rgba(7,92,89,.35); }
 .portal-card > button, .remote-summary > button { flex: none; width: 29px; height: 29px; padding: 0; display: grid; place-items: center; }
+.portal-card > .recover-action {
+  width: auto;
+  min-width: 84px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #023b39;
+  background: rgba(22,184,176,.18);
+  border-color: rgba(7,92,89,.5);
+  font: 800 8px/1 var(--mono);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
 
 .remote-card.degraded { border-color: rgba(255,90,54,.44); }
 .remote-card.degraded .remote-copy strong { color: #9b2a17; }

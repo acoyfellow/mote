@@ -5,7 +5,7 @@
 
   let machineOutput = $state("checking");
   let reachabilityOutput = $state("checking");
-  type PortalStatus = { state: string; accessTokenState?: string; expiresAt?: string | null };
+  type PortalStatus = { state: string; accessTokenState?: string; expiresAt?: string | null; recoverAvailable?: boolean };
   type RemoteSession = { id: string; name?: string; status?: string; updated_at?: string };
   type AttentionItem = { id: string; title?: string; body?: string; seen_at?: string | null };
 
@@ -20,6 +20,7 @@
   let refreshing = $state(false);
   let maintenanceRefreshing = $state(false);
   let portalRefreshing = $state(false);
+  let portalRecovering = $state(false);
   let remoteLabel = $state("Remote activity");
   let remoteConnected = $state(false);
   let remoteToolCount = $state(0);
@@ -35,6 +36,8 @@
   const reachabilityBusy = $derived(busy === "sleep" || busy?.startsWith("awake-") === true);
   const cleanupBusy = $derived(busy === "cleanup");
   const portalHealthy = $derived(portalStatus.state === "refreshable" || portalStatus.state === "valid");
+  const portalMissing = $derived(portalStatus.state === "missing" && portalStatus.recoverAvailable !== false);
+  const portalBusy = $derived(portalRefreshing || portalRecovering);
   const portalDetail = $derived.by(() => {
     if (portalStatus.state === "checking") return "checking local grant";
     if (!portalHealthy) return "sign-in needed";
@@ -93,11 +96,16 @@
     const report = JSON.parse(String(result.output ?? "{}")) as { resources?: Array<PortalStatus & { id?: string }>; id?: string; state?: string; accessTokenState?: string; expiresAt?: string | null };
     const portal = report.resources?.find((resource) => resource.id === resourceId) ?? (report.id === resourceId ? report : null);
     if (!portal?.state) throw new Error("Configured auth status was not present in local output");
-    return { state: portal.state, accessTokenState: portal.accessTokenState, expiresAt: portal.expiresAt };
+    return {
+      state: portal.state,
+      accessTokenState: portal.accessTokenState,
+      expiresAt: portal.expiresAt,
+      recoverAvailable: result.recoverAvailable !== false,
+    };
   }
 
   async function refreshPortal(force = false) {
-    if (portalRefreshing) return;
+    if (portalBusy) return;
     portalRefreshing = true;
     try {
       const result = force ? await native.authResource.refresh() : await native.authResource.status();
@@ -108,6 +116,22 @@
       error = reason instanceof Error ? reason.message : String(reason);
     } finally {
       portalRefreshing = false;
+    }
+  }
+
+  async function recoverPortal() {
+    if (portalBusy) return;
+    portalRecovering = true;
+    error = null;
+    try {
+      await native.authResource.recover();
+      const result = await native.authResource.status();
+      portalStatus = readPortalStatus(result);
+    } catch (reason) {
+      portalStatus = { state: "error" };
+      error = reason instanceof Error ? reason.message : String(reason);
+    } finally {
+      portalRecovering = false;
     }
   }
 
@@ -261,7 +285,12 @@
       <small>{portalDetail}</small>
     </div>
     <span class="portal-state"><i></i>{portalStatus.state}</span>
-    <button class:spinning={portalRefreshing} disabled={portalRefreshing} aria-label="Refresh configured auth" onclick={() => refreshPortal(true)}>
+    {#if portalMissing}
+      <button class="recover-action" disabled={portalBusy} onclick={recoverPortal}>
+        <Wrench size={14} strokeWidth={1.8} /> {portalRecovering ? "Recovering…" : "Recover"}
+      </button>
+    {/if}
+    <button class:spinning={portalRefreshing} disabled={portalBusy} aria-label="Refresh configured auth" onclick={() => refreshPortal(true)}>
       <RefreshCw size={14} strokeWidth={1.8} />
     </button>
   </section>

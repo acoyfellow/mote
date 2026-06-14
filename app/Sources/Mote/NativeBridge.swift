@@ -72,9 +72,11 @@ final class NativeBridge: NSObject, WKScriptMessageHandler {
         case "maintenance.cleanup":
             return await runScript(name: "maintenance.sh", arguments: ["cleanup"])
         case "authResource.status":
-            return await runAuthResource(refresh: false)
+            return await runAuthResource(action: .status)
         case "authResource.refresh":
-            return await runAuthResource(refresh: true)
+            return await runAuthResource(action: .refresh)
+        case "authResource.recover":
+            return await runAuthResource(action: .recover)
         case "remoteCoordinator.overview":
             return await remoteCoordinatorOverview()
         case "remoteCoordinator.acknowledge":
@@ -110,23 +112,43 @@ final class NativeBridge: NSObject, WKScriptMessageHandler {
         )
     }
 
-    private func runAuthResource(refresh: Bool) async -> BridgeResult {
+    private enum AuthResourceAction {
+        case status
+        case refresh
+        case recover
+    }
+
+    private func runAuthResource(action: AuthResourceAction) async -> BridgeResult {
         do {
             let config = try CustomConfig.load().authResource
-            let action = refresh
-                ? [config.cli] + config.refreshArguments
-                : [config.cli] + config.statusArguments
+            let arguments: [String]
+            let timeout: TimeInterval
+            switch action {
+            case .status:
+                arguments = config.statusArguments
+                timeout = 20
+            case .refresh:
+                arguments = config.refreshArguments
+                timeout = 60
+            case .recover:
+                guard let recoverArguments = config.recoverArguments, !recoverArguments.isEmpty else {
+                    return .failure("Auth recovery is not configured")
+                }
+                arguments = recoverArguments
+                timeout = 300
+            }
             let result = await runCommand(
                 executable: URL(fileURLWithPath: config.executable),
-                arguments: action,
+                arguments: [config.cli] + arguments,
                 displayName: "configured auth resource",
-                timeout: 20
+                timeout: timeout
             )
             guard result.object["ok"] as? Bool == true,
                   var value = result.object["value"] as? [String: Any]
             else { return result }
             value["label"] = config.label
             value["resourceId"] = config.resourceId
+            value["recoverAvailable"] = config.recoverArguments?.isEmpty == false
             return .success(value)
         } catch {
             return .failure(error.localizedDescription)

@@ -33,10 +33,11 @@ function demo(command: string, arguments_: Record<string, unknown>): MoteResult 
     };
   }
   if (command.startsWith("remoteCoordinator.")) return { ok: true };
-  if (command === "authResource.status" || command === "authResource.refresh") {
+  if (command === "authResource.status" || command === "authResource.refresh" || command === "authResource.recover") {
     return {
       label: "Configured auth",
       resourceId: "configured-auth",
+      recoverAvailable: true,
       output: JSON.stringify({
         resources: [{ id: "configured-auth", state: "refreshable", expiresAt: new Date(Date.now() + 12 * 60_000).toISOString() }]
       }),
@@ -70,6 +71,7 @@ export const native = {
   authResource: {
     status: () => invoke("authResource.status"),
     refresh: () => invoke("authResource.refresh"),
+    recover: () => invoke("authResource.recover"),
   },
   remoteCoordinator: {
     overview: () => invoke("remoteCoordinator.overview"),

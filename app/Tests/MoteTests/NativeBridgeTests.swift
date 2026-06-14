@@ -34,7 +34,8 @@ struct NativeBridgeTests {
                 "executable": "/bin/bash",
                 "cli": authCli.path,
                 "statusArguments": ["status"],
-                "refreshArguments": ["refresh"]
+                "refreshArguments": ["refresh"],
+                "recoverArguments": ["recover", "configured-auth", "--run"]
             ]
         ]).write(to: config)
         setenv("MOTE_SCRIPT_DIRECTORY", directory.path, 1)
@@ -68,7 +69,7 @@ struct NativeBridgeTests {
     @Test @MainActor
     func configuredAuthStatusAndRefreshReturnSecretFreeMetadata() async throws {
         let bridge = NativeBridge()
-        for command in ["authResource.status", "authResource.refresh"] {
+        for command in ["authResource.status", "authResource.refresh", "authResource.recover"] {
             let result = await bridge.execute(command: command, arguments: [:])
             #expect(result.object["ok"] as? Bool == true)
             let value = try #require(result.object["value"] as? [String: Any])
