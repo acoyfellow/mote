@@ -11,7 +11,7 @@
       <a href="#workspace">Workspace</a>
       <a href="#bridge">Native bridge</a>
       <a href="#custom">Custom layer</a>
-      <a href="#roadmap">Roadmap</a>
+      <a href="#architecture">Architecture</a>
     </aside>
 
     <article>
@@ -87,15 +87,6 @@ await native.reachability.start(8 * 60 * 60);</pre>
         </div>
       </section>
 
-      <section id="roadmap">
-        <h2>Roadmap</h2>
-        <ol>
-          <li><b>Now:</b> local menu-bar shell with live Svelte surface and bounded native bridge.</li>
-          <li><b>Next:</b> signed app bundle, bundled compiler sidecar, workspace manifests.</li>
-          <li><b>Then:</b> workbench for agent-proposed patches, isolated preview, accept/reject, rollback.</li>
-          <li><b>Connected:</b> optional login, device routing, model-call routing, and encrypted bundle history.</li>
-        </ol>
-      </section>
 
       <div class="end"><p class="specimen">End of current docs</p><a href="https://github.com/acoyfellow/mote">Read the source →</a></div>
     </article>
@@ -157,8 +148,6 @@ await native.reachability.start(8 * 60 * 60);</pre>
   .diagram b { margin-top: 4px; color: var(--carbon); }
   .diagram small { color: rgba(23,32,25,.58); }
   .diagram i { color: rgba(7,92,89,.7); font: 10px var(--mono); text-transform: uppercase; letter-spacing: .12em; font-style: normal; text-align: center; }
-  ol { padding-left: 20px; }
-  li { padding: 8px 0; color: rgba(23,32,25,.68); }
   .end { margin-top: 80px; padding: 24px; border: 1px solid var(--line); text-align: center; background: rgba(251,247,234,.62); }
   .end p { margin-bottom: 12px; }
   .end a { color: var(--teal); font: 700 11px var(--mono); text-transform: uppercase; letter-spacing: .1em; }
