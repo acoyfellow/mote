@@ -8,6 +8,12 @@
   type PortalStatus = { state: string; accessTokenState?: string; expiresAt?: string | null; recoverAvailable?: boolean };
   type RemoteSession = { id: string; name?: string; status?: string; updated_at?: string };
   type AttentionItem = { id: string; title?: string; body?: string; seen_at?: string | null };
+  type ReviewItem = { projectPath?: string; iid?: number; url?: string; reason?: string; expectedAction?: string; decisionSessionUrl?: string };
+  type ReviewLoopState = {
+    lastCheckedAt?: string;
+    pendingItems?: ReviewItem[];
+    lastRun?: { status?: string; blocking?: number; needsInput?: number; commentsPosted?: number; finishedAt?: string; dryRun?: boolean } | null;
+  };
 
   let maintenanceOutput = $state("checking");
   let customConfigured = $state<boolean | null>(null);
@@ -31,8 +37,17 @@
   let remoteError = $state<string | null>(null);
   let steeringSession = $state<string | null>(null);
   let steeringMessage = $state("");
+  let reviewLabel = $state("Review loop");
+  let reviewState = $state<ReviewLoopState>({});
+  let reviewOrders = $state("");
+  let reviewRefreshing = $state(false);
+  let reviewError = $state<string | null>(null);
 
   const unreadAttention = $derived(attentionItems.filter((item) => !item.seen_at));
+  const pendingReviews = $derived(reviewState.pendingItems ?? []);
+  const reviewRun = $derived(reviewState.lastRun ?? null);
+  const reviewBlocking = $derived(Number(reviewRun?.blocking ?? 0));
+  const reviewNeedsInput = $derived(Number(reviewRun?.needsInput ?? 0));
   const machineBusy = $derived(busy?.startsWith("machine-") ?? false);
   const reachabilityBusy = $derived(busy === "sleep" || busy?.startsWith("awake-") === true);
   const cleanupBusy = $derived(busy === "cleanup");
@@ -144,6 +159,24 @@
     return customConfigured;
   }
 
+  async function refreshReviewLoop() {
+    if (reviewRefreshing) return;
+    reviewRefreshing = true;
+    try {
+      const result = await native.reviewLoop.status();
+      reviewLabel = String(result.label ?? "Review loop");
+      reviewState = (result.state ?? {}) as ReviewLoopState;
+      reviewOrders = String(result.orders ?? "");
+      reviewError = null;
+    } catch (reason) {
+      reviewState = {};
+      reviewOrders = "";
+      reviewError = reason instanceof Error ? reason.message : String(reason);
+    } finally {
+      reviewRefreshing = false;
+    }
+  }
+
   async function refreshRemote() {
     if (remoteRefreshing) return;
     remoteRefreshing = true;
@@ -186,7 +219,7 @@
       const configured = await loadConfiguration();
       if (!configured) return;
     }
-    await Promise.all([refreshCore(), refreshPortal(), refreshRemote()]);
+    await Promise.all([refreshCore(), refreshPortal(), refreshRemote(), refreshReviewLoop()]);
     void refreshMaintenance();
   }
 
@@ -226,6 +259,7 @@
       timers.push(window.setInterval(refreshMaintenance, 5 * 60_000));
       timers.push(window.setInterval(refreshPortal, 5 * 60_000));
       timers.push(window.setInterval(refreshRemote, 30_000));
+      timers.push(window.setInterval(refreshReviewLoop, 30_000));
     })();
     return () => {
       for (const timer of timers) window.clearInterval(timer);
@@ -357,6 +391,31 @@
           {/if}
         {/each}
       </div>
+    {/if}
+  </section>
+
+  <section class="review-card" class:blocked={reviewBlocking > 0} class:needs-input={reviewNeedsInput > 0}>
+    <div class="review-summary">
+      <div class="icon-well small"><RefreshCw size={16} /></div>
+      <div class="review-copy">
+        <span>{reviewLabel}</span>
+        <strong>{reviewError ? "Unavailable" : reviewRun?.status === "needs_input" ? "Decision needed" : reviewBlocking > 0 ? "Blocked" : pendingReviews.length > 0 ? "In progress" : "Caught up"}</strong>
+        <small>{reviewError ?? `${pendingReviews.length} pending · ${reviewBlocking} blocking · ${Number(reviewRun?.commentsPosted ?? 0)} comments`}</small>
+      </div>
+      <button class:spinning={reviewRefreshing} disabled={reviewRefreshing} aria-label="Refresh review loop" onclick={refreshReviewLoop}><RefreshCw size={14} /></button>
+    </div>
+
+    {#if pendingReviews.length > 0}
+      <div class="review-list">
+        {#each pendingReviews.slice(0, 3) as item (`${item.projectPath}:${item.iid}`)}
+          <a class="review-row" href={item.decisionSessionUrl ?? item.url ?? "#"} target="_blank" rel="noreferrer">
+            <span><strong>!{item.iid ?? "?"} · {item.expectedAction ?? "review"}</strong><small>{item.reason ?? item.projectPath ?? "Pending review"}</small></span>
+            <ChevronRight size={14} />
+          </a>
+        {/each}
+      </div>
+    {:else if reviewOrders}
+      <p class="review-empty">No pending reviews. Latest loop receipt is available locally.</p>
     {/if}
   </section>
 

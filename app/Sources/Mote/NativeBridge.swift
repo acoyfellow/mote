@@ -99,6 +99,22 @@ final class NativeBridge: NSObject, WKScriptMessageHandler {
                 NSWorkspace.shared.open(url)
                 return .success(["opened": true])
             } catch { return .failure(error.localizedDescription) }
+        case "reviewLoop.status":
+            do {
+                guard let config = try CustomConfig.load().reviewLoop else {
+                    return .failure("Review loop is not configured")
+                }
+                let stateURL = URL(fileURLWithPath: NSString(string: config.statePath).expandingTildeInPath)
+                let ordersURL = URL(fileURLWithPath: NSString(string: config.ordersPath).expandingTildeInPath)
+                let stateData = try Data(contentsOf: stateURL)
+                guard let state = try JSONSerialization.jsonObject(with: stateData) as? [String: Any] else {
+                    return .failure("Review loop state is not a JSON object")
+                }
+                let orders = (try? String(contentsOf: ordersURL, encoding: .utf8)) ?? ""
+                return .success(["label": config.label, "state": state, "orders": orders])
+            } catch {
+                return .failure(error.localizedDescription)
+            }
         default:
             return .failure("Unknown native command: \(command)")
         }

@@ -34,6 +34,17 @@ function demo(command: string, arguments_: Record<string, unknown>): MoteResult 
     };
   }
   if (command.startsWith("remoteCoordinator.")) return { ok: true };
+  if (command === "reviewLoop.status") return {
+    label: "Review loop",
+    state: {
+      lastCheckedAt: new Date().toISOString(),
+      pendingItems: [
+        { projectPath: "example/project", iid: 11, reason: "Re-review after author update", expectedAction: "re-review" },
+      ],
+      lastRun: { status: "needs_input", blocking: 1, commentsPosted: 0 },
+    },
+    orders: "# Review marching orders\n\nOne review is waiting for a follow-up.",
+  };
   if (command === "authResource.status" || command === "authResource.refresh" || command === "authResource.recover") {
     return {
       label: "Configured auth",
@@ -79,5 +90,8 @@ export const native = {
     acknowledge: (id: string) => invoke("remoteCoordinator.acknowledge", { id }),
     steer: (sessionId: string, content: string) => invoke("remoteCoordinator.steer", { sessionId, content }),
     open: () => invoke("remoteCoordinator.open"),
+  },
+  reviewLoop: {
+    status: () => invoke("reviewLoop.status"),
   },
 };

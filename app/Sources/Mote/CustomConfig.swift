@@ -16,6 +16,12 @@ struct CustomConfig: Decodable, Sendable {
         let endpointLabel: String?
     }
 
+    struct ReviewLoop: Decodable, Sendable {
+        let label: String
+        let statePath: String
+        let ordersPath: String
+    }
+
     struct RemoteCoordinator: Decodable, Sendable {
         struct Operations: Decodable, Sendable {
             let connectorStatus: String
@@ -35,6 +41,7 @@ struct CustomConfig: Decodable, Sendable {
     let authResource: AuthResource
     let presentation: Presentation?
     let remoteCoordinator: RemoteCoordinator?
+    let reviewLoop: ReviewLoop?
 
     static func load() throws -> CustomConfig {
         let file = ProcessInfo.processInfo.environment["MOTE_CUSTOM_CONFIG"]

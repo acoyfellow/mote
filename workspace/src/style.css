@@ -311,6 +311,23 @@ button:disabled { opacity: .48; }
 .steer-form input { min-width: 0; flex: 1; height: 28px; padding: 0 9px; border: 1px solid var(--line); outline: none; color: var(--carbon); background: rgba(251,247,234,.82); font-size: 9px; }
 .steer-form input:focus { border-color: rgba(7,92,89,.52); }
 
+.review-card { margin-top: 8px; padding: 10px; }
+.review-card.blocked { border-color: rgba(255,90,54,.5); }
+.review-card.needs-input { box-shadow: inset 3px 0 0 var(--vermilion); }
+.review-summary { display: flex; align-items: center; gap: 9px; }
+.review-copy { min-width: 0; display: grid; flex: 1; line-height: 1.12; }
+.review-copy span { color: var(--muted); font: 700 8px/1.2 var(--mono); text-transform: uppercase; letter-spacing: .11em; }
+.review-copy strong { margin-top: 3px; color: var(--carbon); font-size: 11px; }
+.review-copy small { margin-top: 3px; color: var(--muted); font-size: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.review-summary > button { flex: none; width: 29px; height: 29px; padding: 0; display: grid; place-items: center; }
+.review-list { margin-top: 9px; border-top: 1px solid var(--line-soft); }
+.review-row { min-height: 42px; display: flex; align-items: center; gap: 8px; color: inherit; text-decoration: none; border-bottom: 1px solid var(--line-soft); }
+.review-row > span { min-width: 0; flex: 1; display: grid; }
+.review-row strong { color: var(--carbon); font-size: 9px; }
+.review-row small { margin-top: 2px; color: var(--muted); font-size: 7px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.review-row:hover strong { color: var(--teal); }
+.review-empty { margin: 9px 0 0; padding-top: 8px; border-top: 1px solid var(--line-soft); color: var(--muted); font-size: 8px; }
+
 .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
 .mini-card { min-width: 0; min-height: 141px; padding: 12px; display: flex; flex-direction: column; }
 .mini-title { display: flex; align-items: center; gap: 7px; color: var(--teal); font: 700 9px/1 var(--mono); text-transform: uppercase; letter-spacing: .08em; }
