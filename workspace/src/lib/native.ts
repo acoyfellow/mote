@@ -34,17 +34,22 @@ function demo(command: string, arguments_: Record<string, unknown>): MoteResult 
     };
   }
   if (command.startsWith("remoteCoordinator.")) return { ok: true };
-  if (command === "reviewLoop.status") return {
-    label: "Review loop",
-    state: {
-      lastCheckedAt: new Date().toISOString(),
-      pendingItems: [
-        { projectPath: "example/project", iid: 11, reason: "Re-review after author update", expectedAction: "re-review" },
+  if (command === "loopsYaml.status") return {
+    label: "loops.yaml",
+    data: {
+      configPath: "/Users/me/project/loops.yaml",
+      watcher: { running: true, record: { pid: 4242 } },
+      loops: [
+        { name: "review", schedule: "*/30 * * * *", run: "./scripts/review.sh", cwd: "/Users/me/project", latest: { finishedAt: new Date().toISOString(), exitCode: 0 } },
+        { name: "backup", run: "./scripts/backup.sh", cwd: "/Users/me/project", latest: null },
       ],
-      lastRun: { status: "needs_input", blocking: 1, commentsPosted: 0 },
     },
-    orders: "# Review marching orders\n\nOne review is waiting for a follow-up.",
   };
+  if (command === "authResource.mcpStatus") return { output: "●  ✓ cf-portal connected" };
+  if (command === "terrarium.status") return { label: "Terrarium", data: { activeCount: 2, runs: [{ runId: "ter_demo_alpha", status: "running", task: "Research architecture", progressText: "reading docs", needsAttention: false, startedAt: new Date().toISOString() }, { runId: "ter_demo_beta", status: "running", task: "Review tests", progressText: "running checks", needsAttention: true, startedAt: new Date().toISOString() }] } };
+  if (command === "terrarium.doctor") return { label: "Terrarium", data: { ok: true, checks: { activeRuns: 2, orphanedRuns: 0, needsAttentionRuns: 1, groups: 1, subscribers: 2, pendingCallbacks: 0, inflightCallbacks: 0, staleChildClaims: 0 }, warnings: [] } };
+  if (command === "terrarium.cancel") return { output: "cancel requested", exitCode: 0 };
+  if (command.startsWith("loopsYaml.")) return { data: { ok: true }, output: "ok" };
   if (command === "authResource.status" || command === "authResource.refresh" || command === "authResource.recover") {
     return {
       label: "Configured auth",
@@ -84,6 +89,7 @@ export const native = {
     status: () => invoke("authResource.status"),
     refresh: () => invoke("authResource.refresh"),
     recover: () => invoke("authResource.recover"),
+    mcpStatus: () => invoke("authResource.mcpStatus"),
   },
   remoteCoordinator: {
     overview: () => invoke("remoteCoordinator.overview"),
@@ -91,7 +97,17 @@ export const native = {
     steer: (sessionId: string, content: string) => invoke("remoteCoordinator.steer", { sessionId, content }),
     open: () => invoke("remoteCoordinator.open"),
   },
-  reviewLoop: {
-    status: () => invoke("reviewLoop.status"),
+  terrarium: {
+    status: () => invoke("terrarium.status"),
+    doctor: () => invoke("terrarium.doctor"),
+    cancel: (runId: string) => invoke("terrarium.cancel", { runId }),
+  },
+  loopsYaml: {
+    status: () => invoke("loopsYaml.status"),
+    set: (loop: { name: string; run: string; schedule?: string; cwd?: string }) => invoke("loopsYaml.set", loop),
+    delete: (name: string) => invoke("loopsYaml.delete", { name }),
+    run: (name: string) => invoke("loopsYaml.run", { name }),
+    logs: (name: string) => invoke("loopsYaml.logs", { name }),
+    watcher: (action: "start" | "stop" | "restart") => invoke("loopsYaml.watcher", { action }),
   },
 };

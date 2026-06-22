@@ -1,19 +1,19 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { Activity, ChevronRight, Clock3, FolderOpen, KeyRound, Laptop, Moon, Power, RefreshCw, Sparkles, Wrench } from "@lucide/svelte";
+  import { Activity, ChevronRight, Clock3, FolderOpen, KeyRound, Laptop, Moon, Pencil, Play, Plus, Power, RefreshCw, Save, Square, Sparkles, Trash2, Wrench, X } from "@lucide/svelte";
   import { native, type MachineAction, type MachineMode } from "./lib/native";
 
   let machineOutput = $state("checking");
   let reachabilityOutput = $state("checking");
-  type PortalStatus = { state: string; accessTokenState?: string; expiresAt?: string | null; recoverAvailable?: boolean };
+  type PortalStatus = { state: string; accessTokenState?: string; expiresAt?: string | null; recoverAvailable?: boolean; checkedAt?: string; mcpState?: string };
   type RemoteSession = { id: string; name?: string; status?: string; updated_at?: string };
   type AttentionItem = { id: string; title?: string; body?: string; seen_at?: string | null };
-  type ReviewItem = { projectPath?: string; iid?: number; url?: string; reason?: string; expectedAction?: string; decisionSessionUrl?: string };
-  type ReviewLoopState = {
-    lastCheckedAt?: string;
-    pendingItems?: ReviewItem[];
-    lastRun?: { status?: string; blocking?: number; needsInput?: number; commentsPosted?: number; finishedAt?: string; dryRun?: boolean } | null;
-  };
+  type LoopRun = { startedAt?: string; finishedAt?: string; exitCode?: number; pid?: number; logPath?: string };
+  type LoopDefinition = { name: string; run: string; schedule?: string; cwd?: string; latest?: LoopRun | null };
+  type LoopsState = { configPath?: string; watcher?: { running?: boolean; record?: { pid?: number; startedAt?: string } | null }; loops?: LoopDefinition[] };
+  type TerrariumRun = { runId: string; status?: string; task?: string; progressText?: string; needsAttention?: boolean; startedAt?: string; taskContractStatus?: string };
+  type TerrariumState = { activeCount?: number; runs?: TerrariumRun[] };
+  type TerrariumDoctor = { ok?: boolean; checks?: { activeRuns?: number; orphanedRuns?: number; needsAttentionRuns?: number; groups?: number; subscribers?: number; pendingCallbacks?: number; inflightCallbacks?: number; staleChildClaims?: number }; warnings?: string[] };
 
   let maintenanceOutput = $state("checking");
   let customConfigured = $state<boolean | null>(null);
@@ -37,27 +37,37 @@
   let remoteError = $state<string | null>(null);
   let steeringSession = $state<string | null>(null);
   let steeringMessage = $state("");
-  let reviewLabel = $state("Review loop");
-  let reviewState = $state<ReviewLoopState>({});
-  let reviewOrders = $state("");
-  let reviewRefreshing = $state(false);
-  let reviewError = $state<string | null>(null);
+  let loopsLabel = $state("loops.yaml");
+  let loopsState = $state<LoopsState>({});
+  let loopsRefreshing = $state(false);
+  let loopsError = $state<string | null>(null);
+  let editingLoop = $state<LoopDefinition | null>(null);
+  let loopLogs = $state<{ name: string; text: string } | null>(null);
+  let deletePending = $state<string | null>(null);
+  let terrariumLabel = $state("Terrarium");
+  let terrariumState = $state<TerrariumState>({});
+  let terrariumDoctor = $state<TerrariumDoctor>({});
+  let terrariumRefreshing = $state(false);
+  let terrariumError = $state<string | null>(null);
 
   const unreadAttention = $derived(attentionItems.filter((item) => !item.seen_at));
-  const pendingReviews = $derived(reviewState.pendingItems ?? []);
-  const reviewRun = $derived(reviewState.lastRun ?? null);
-  const reviewBlocking = $derived(Number(reviewRun?.blocking ?? 0));
-  const reviewNeedsInput = $derived(Number(reviewRun?.needsInput ?? 0));
+  const loops = $derived(loopsState.loops ?? []);
+  const watcherRunning = $derived(loopsState.watcher?.running === true);
   const machineBusy = $derived(busy?.startsWith("machine-") ?? false);
   const reachabilityBusy = $derived(busy === "sleep" || busy?.startsWith("awake-") === true);
   const cleanupBusy = $derived(busy === "cleanup");
-  const portalHealthy = $derived(portalStatus.state === "refreshable" || portalStatus.state === "valid");
-  const portalMissing = $derived(portalStatus.state === "missing" && portalStatus.recoverAvailable !== false);
+  const portalExpired = $derived(portalStatus.accessTokenState === "expired");
+  const portalConnected = $derived(portalStatus.mcpState === "connected");
+  const portalHealthy = $derived(portalConnected);
+  const portalMissing = $derived((portalStatus.mcpState !== "connected" || portalStatus.state === "missing" || portalExpired) && portalStatus.recoverAvailable !== false);
   const portalBusy = $derived(portalRefreshing || portalRecovering);
   const portalDetail = $derived.by(() => {
     if (portalStatus.state === "checking") return "checking local grant";
+    if (portalStatus.mcpState === "needs authentication") return "local opencode MCP needs authentication";
+    if (portalStatus.mcpState === "unknown") return "could not probe local MCP";
+    if (portalExpired) return "MCP token expired · reconnect required";
     if (!portalHealthy) return "sign-in needed";
-    if (!portalStatus.expiresAt) return "refresh grant stored";
+    if (!portalStatus.expiresAt) return "connected · refresh grant stored";
     const expiry = new Date(portalStatus.expiresAt);
     if (Number.isNaN(expiry.getTime())) return "refresh grant stored";
     return `access token until ${expiry.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
@@ -73,6 +83,9 @@
   });
   const diskFree = $derived(maintenanceOutput.match(/Disk free:\s*([^·\n]+)/)?.[1]?.trim() ?? "—");
   const lastCleanup = $derived(maintenanceOutput.match(/Last cleanup:\s*(.+)/)?.[1]?.trim() ?? "—");
+  const terrariumRuns = $derived(terrariumState.runs ?? []);
+  const terrariumAttention = $derived(terrariumRuns.filter((run) => run.needsAttention));
+  const terrariumActive = $derived(terrariumDoctor.checks?.activeRuns ?? terrariumState.activeCount ?? 0);
 
   async function refreshCore() {
     if (refreshing) return;
@@ -106,10 +119,18 @@
     }
   }
 
+  function readMcpStatus(result: Record<string, unknown>): Pick<PortalStatus, "mcpState"> {
+    const clean = String(result.output ?? "").replace(/\x1b\[[0-9;?]*[ -/]*[@-~]/g, "");
+    const line = clean.split("\n").find((value) => value.includes("cf-portal")) ?? "";
+    if (line.includes("connected")) return { mcpState: "connected" };
+    if (line.includes("needs authentication")) return { mcpState: "needs authentication" };
+    return { mcpState: "unknown" };
+  }
+
   function readPortalStatus(result: Record<string, unknown>): PortalStatus {
     const resourceId = String(result.resourceId ?? "");
     authLabel = String(result.label ?? "Configured auth");
-    const report = JSON.parse(String(result.output ?? "{}")) as { resources?: Array<PortalStatus & { id?: string }>; id?: string; state?: string; accessTokenState?: string; expiresAt?: string | null };
+    const report = JSON.parse(String(result.output ?? "{}")) as { resources?: Array<PortalStatus & { id?: string }>; id?: string; state?: string; accessTokenState?: string; expiresAt?: string | null; checkedAt?: string };
     const portal = report.resources?.find((resource) => resource.id === resourceId) ?? (report.id === resourceId ? report : null);
     if (!portal?.state) throw new Error("Configured auth status was not present in local output");
     return {
@@ -117,6 +138,7 @@
       accessTokenState: portal.accessTokenState,
       expiresAt: portal.expiresAt,
       recoverAvailable: result.recoverAvailable !== false,
+      checkedAt: report.checkedAt,
     };
   }
 
@@ -124,8 +146,11 @@
     if (portalBusy) return;
     portalRefreshing = true;
     try {
-      const result = force ? await native.authResource.refresh() : await native.authResource.status();
-      portalStatus = readPortalStatus(result);
+      const [result, mcp] = await Promise.all([
+        force ? native.authResource.refresh() : native.authResource.status(),
+        native.authResource.mcpStatus(),
+      ]);
+      portalStatus = { ...readPortalStatus(result), ...readMcpStatus(mcp) };
       error = null;
     } catch (reason) {
       portalStatus = { state: "error" };
@@ -159,22 +184,96 @@
     return customConfigured;
   }
 
-  async function refreshReviewLoop() {
-    if (reviewRefreshing) return;
-    reviewRefreshing = true;
+  async function refreshTerrarium() {
+    if (terrariumRefreshing) return;
+    terrariumRefreshing = true;
     try {
-      const result = await native.reviewLoop.status();
-      reviewLabel = String(result.label ?? "Review loop");
-      reviewState = (result.state ?? {}) as ReviewLoopState;
-      reviewOrders = String(result.orders ?? "");
-      reviewError = null;
+      const [status, doctor] = await Promise.all([native.terrarium.status(), native.terrarium.doctor()]);
+      terrariumLabel = String(status.label ?? "Terrarium");
+      terrariumState = (status.data ?? {}) as TerrariumState;
+      terrariumDoctor = (doctor.data ?? {}) as TerrariumDoctor;
+      terrariumError = null;
     } catch (reason) {
-      reviewState = {};
-      reviewOrders = "";
-      reviewError = reason instanceof Error ? reason.message : String(reason);
+      terrariumState = {};
+      terrariumDoctor = {};
+      terrariumError = reason instanceof Error ? reason.message : String(reason);
+    } finally { terrariumRefreshing = false; }
+  }
+
+  async function cancelTerrarium(runId: string) {
+    await run(`terrarium-cancel-${runId}`, () => native.terrarium.cancel(runId));
+    await refreshTerrarium();
+  }
+
+  async function refreshLoops() {
+    if (loopsRefreshing) return;
+    loopsRefreshing = true;
+    try {
+      const result = await native.loopsYaml.status();
+      loopsLabel = String(result.label ?? "loops.yaml");
+      loopsState = (result.data ?? {}) as LoopsState;
+      loopsError = null;
+    } catch (reason) {
+      loopsState = {};
+      loopsError = reason instanceof Error ? reason.message : String(reason);
     } finally {
-      reviewRefreshing = false;
+      loopsRefreshing = false;
     }
+  }
+
+  function editLoop(loop?: LoopDefinition) {
+    editingLoop = loop ? { ...loop } : { name: "", run: "", schedule: "", cwd: "" };
+    loopLogs = null;
+  }
+
+  async function saveLoop() {
+    if (!editingLoop?.name.trim() || !editingLoop.run.trim()) return;
+    await run("loop-save", () => native.loopsYaml.set({
+      name: editingLoop!.name.trim(),
+      run: editingLoop!.run,
+      schedule: editingLoop!.schedule ?? "",
+      cwd: editingLoop!.cwd ?? "",
+    }));
+    editingLoop = null;
+    await refreshLoops();
+  }
+
+  async function deleteLoop(name: string) {
+    await run("loop-delete", () => native.loopsYaml.delete(name));
+    deletePending = null;
+    await refreshLoops();
+  }
+
+  function requestDelete(name: string) {
+    if (deletePending === name) {
+      void deleteLoop(name);
+      return;
+    }
+    deletePending = name;
+  }
+
+  async function runLoopNow(name: string) {
+    await run(`loop-run-${name}`, () => native.loopsYaml.run(name));
+    await refreshLoops();
+  }
+
+  async function showLoopLogs(name: string) {
+    if (busy) return;
+    busy = `loop-logs-${name}`;
+    error = null;
+    try {
+      const result = await native.loopsYaml.logs(name);
+      loopLogs = { name, text: String(result.output ?? "No output") };
+    } catch (reason) {
+      error = reason instanceof Error ? reason.message : String(reason);
+    } finally {
+      busy = null;
+    }
+  }
+
+  async function watcherAction(action: "start" | "stop" | "restart") {
+    await run(`watcher-${action}`, () => native.loopsYaml.watcher(action));
+    await refreshLoops();
   }
 
   async function refreshRemote() {
@@ -219,7 +318,7 @@
       const configured = await loadConfiguration();
       if (!configured) return;
     }
-    await Promise.all([refreshCore(), refreshPortal(), refreshRemote(), refreshReviewLoop()]);
+    await Promise.all([refreshCore(), refreshPortal(), refreshRemote(), refreshLoops(), refreshTerrarium()]);
     void refreshMaintenance();
   }
 
@@ -257,9 +356,10 @@
       void refreshAll();
       timers.push(window.setInterval(refreshCore, 30_000));
       timers.push(window.setInterval(refreshMaintenance, 5 * 60_000));
-      timers.push(window.setInterval(refreshPortal, 5 * 60_000));
+      timers.push(window.setInterval(refreshPortal, 30_000));
       timers.push(window.setInterval(refreshRemote, 30_000));
-      timers.push(window.setInterval(refreshReviewLoop, 30_000));
+      timers.push(window.setInterval(refreshLoops, 30_000));
+      timers.push(window.setInterval(refreshTerrarium, 5_000));
     })();
     return () => {
       for (const timer of timers) window.clearInterval(timer);
@@ -338,13 +438,13 @@
     <div class="icon-well small"><KeyRound size={16} strokeWidth={1.8} /></div>
     <div class="portal-copy">
       <span>{authLabel}</span>
-      <strong>{portalHealthy ? "Ready" : portalStatus.state === "checking" ? "Checking…" : "Needs sign-in"}</strong>
+      <strong>{portalHealthy ? "Connected" : portalStatus.state === "checking" ? "Checking…" : "Reconnect needed"}</strong>
       <small>{portalDetail}</small>
     </div>
-    <span class="portal-state"><i></i>{portalStatus.state}</span>
+    <span class="portal-state"><i></i>{portalStatus.mcpState ?? "checking"}</span>
     {#if portalMissing}
       <button class="recover-action" disabled={portalBusy} onclick={recoverPortal}>
-        <Wrench size={14} strokeWidth={1.8} /> {portalRecovering ? "Recovering…" : "Recover"}
+        <Wrench size={14} strokeWidth={1.8} /> {portalRecovering ? "Reconnecting…" : "Reconnect"}
       </button>
     {/if}
     <button class:spinning={portalRefreshing} disabled={portalBusy} aria-label="Refresh configured auth" onclick={() => refreshPortal(true)}>
@@ -394,28 +494,78 @@
     {/if}
   </section>
 
-  <section class="review-card" class:blocked={reviewBlocking > 0} class:needs-input={reviewNeedsInput > 0}>
+  <section class="review-card terrarium-card" class:blocked={terrariumAttention.length > 0 || (terrariumDoctor.checks?.orphanedRuns ?? 0) > 0}>
+    <div class="review-summary">
+      <div class="icon-well small"><Sparkles size={16} /></div>
+      <div class="review-copy">
+        <span>{terrariumLabel}</span>
+        <strong>{terrariumError ? "Unavailable" : `${terrariumActive} active run${terrariumActive === 1 ? "" : "s"}`}</strong>
+        <small>{terrariumError ?? `${terrariumAttention.length} need attention · ${terrariumDoctor.checks?.groups ?? 0} groups · ${terrariumDoctor.checks?.pendingCallbacks ?? 0} pending callbacks`}</small>
+      </div>
+      <button class:spinning={terrariumRefreshing} disabled={terrariumRefreshing} aria-label="Refresh Terrarium" onclick={refreshTerrarium}><RefreshCw size={14} /></button>
+    </div>
+    <div class="review-list terrarium-list">
+      {#each terrariumRuns.slice(0, 5) as run (run.runId)}
+        <div class="review-row terrarium-row" class:attention={run.needsAttention}>
+          <div class="loop-main"><span><strong>{run.task || "Unnamed task"}</strong><small>{run.status ?? "unknown"} · {run.progressText ?? "waiting"} · {run.runId.slice(-8)}</small></span></div>
+          {#if run.needsAttention}<span class="pill warn">attention</span>{/if}
+          {#if run.status === "running"}<button title="Cancel run" disabled={busy?.startsWith("terrarium-cancel-")} onclick={() => cancelTerrarium(run.runId)}><Square size={13} /></button>{/if}
+        </div>
+      {:else}
+        <p class="review-empty">No active Terrarium runs. Launch one from Pi or the CLI.</p>
+      {/each}
+    </div>
+  </section>
+
+  <section class="review-card loops-card" class:blocked={loops.some((loop) => loop.latest?.exitCode != null && loop.latest.exitCode !== 0)}>
     <div class="review-summary">
       <div class="icon-well small"><RefreshCw size={16} /></div>
       <div class="review-copy">
-        <span>{reviewLabel}</span>
-        <strong>{reviewError ? "Unavailable" : reviewRun?.status === "needs_input" ? "Decision needed" : reviewBlocking > 0 ? "Blocked" : pendingReviews.length > 0 ? "In progress" : "Caught up"}</strong>
-        <small>{reviewError ?? `${pendingReviews.length} pending · ${reviewBlocking} blocking · ${Number(reviewRun?.commentsPosted ?? 0)} comments`}</small>
+        <span>{loopsLabel}</span>
+        <strong>{loopsError ? "Unavailable" : `${loops.length} loop${loops.length === 1 ? "" : "s"}`}</strong>
+        <small>{loopsError ?? `${watcherRunning ? `active · pid ${loopsState.watcher?.record?.pid ?? "?"}` : "schedules paused"} · ${loopsState.configPath ?? "loops.yaml"}`}</small>
       </div>
-      <button class:spinning={reviewRefreshing} disabled={reviewRefreshing} aria-label="Refresh review loop" onclick={refreshReviewLoop}><RefreshCw size={14} /></button>
+      <button class="watcher-action" disabled={busy?.startsWith("watcher-")} onclick={() => watcherAction(watcherRunning ? "stop" : "start")}>
+        {#if watcherRunning}<Square size={12} /> Pause{:else}<Play size={12} /> Resume{/if}
+      </button>
+      {#if watcherRunning}<button aria-label="Restart watcher" disabled={busy?.startsWith("watcher-")} onclick={() => watcherAction("restart")}><RefreshCw size={14} /></button>{/if}
+      <button class:spinning={loopsRefreshing} disabled={loopsRefreshing} aria-label="Refresh loops" onclick={refreshLoops}><RefreshCw size={14} /></button>
+      <button aria-label="Add loop" onclick={() => editLoop()}><Plus size={14} /></button>
     </div>
 
-    {#if pendingReviews.length > 0}
-      <div class="review-list">
-        {#each pendingReviews.slice(0, 3) as item (`${item.projectPath}:${item.iid}`)}
-          <a class="review-row" href={item.decisionSessionUrl ?? item.url ?? "#"} target="_blank" rel="noreferrer">
-            <span><strong>!{item.iid ?? "?"} · {item.expectedAction ?? "review"}</strong><small>{item.reason ?? item.projectPath ?? "Pending review"}</small></span>
-            <ChevronRight size={14} />
-          </a>
-        {/each}
-      </div>
-    {:else if reviewOrders}
-      <p class="review-empty">No pending reviews. Latest loop receipt is available locally.</p>
+    <div class="review-list loops-list">
+      {#each loops as loop (loop.name)}
+        <div class="review-row loop-row">
+          <div class="loop-main">
+            <span><strong>{loop.name}</strong><small>{loop.schedule || "on demand"} · {loop.latest ? loop.latest.exitCode == null ? "running" : `exit ${loop.latest.exitCode}` : "never run"}</small></span>
+          </div>
+          <button title="Edit loop" disabled={busy === "loop-save"} onclick={() => editLoop(loop)}><Pencil size={13} /></button>
+          <button title="Run now" disabled={busy === `loop-run-${loop.name}`} onclick={() => runLoopNow(loop.name)}><Play size={13} /></button>
+          <button title="View logs" disabled={busy === `loop-logs-${loop.name}`} onclick={() => showLoopLogs(loop.name)}><ChevronRight size={13} /></button>
+          {#if deletePending === loop.name}
+            <button class="danger-action" title="Confirm delete" disabled={busy === "loop-delete"} onclick={() => requestDelete(loop.name)}><Trash2 size={13} /></button>
+            <button title="Cancel delete" disabled={busy === "loop-delete"} onclick={() => deletePending = null}><X size={13} /></button>
+          {:else}
+            <button class="danger-action" title="Delete" disabled={busy === "loop-delete"} onclick={() => requestDelete(loop.name)}><Trash2 size={13} /></button>
+          {/if}
+        </div>
+      {:else}
+        <p class="review-empty">No loops yet. Add one to edit the real loops.yaml file.</p>
+      {/each}
+    </div>
+
+    {#if editingLoop}
+      <form class="loop-editor" onsubmit={(event) => { event.preventDefault(); void saveLoop(); }}>
+        <div class="editor-heading"><strong>{loops.some((loop) => loop.name === editingLoop?.name) ? "Edit loop" : "New loop"}</strong><button type="button" aria-label="Close editor" onclick={() => editingLoop = null}><X size={14} /></button></div>
+        <label>Name<input bind:value={editingLoop.name} required pattern="[a-zA-Z0-9][a-zA-Z0-9._-]*" disabled={loops.some((loop) => loop.name === editingLoop?.name)} /></label>
+        <label>Command<textarea bind:value={editingLoop.run} required rows="3"></textarea></label>
+        <div class="editor-grid"><label>Schedule<input bind:value={editingLoop.schedule} placeholder="*/30 * * * *" /></label><label>Working directory<input bind:value={editingLoop.cwd} placeholder="relative or absolute" /></label></div>
+        <button class="primary" disabled={busy === "loop-save" || !editingLoop.name.trim() || !editingLoop.run.trim()}><Save size={13} /> Save to loops.yaml</button>
+      </form>
+    {/if}
+
+    {#if loopLogs}
+      <div class="loop-logs"><div class="editor-heading"><strong>{loopLogs.name} logs</strong><button aria-label="Close logs" onclick={() => loopLogs = null}><X size={14} /></button></div><pre>{loopLogs.text}</pre></div>
     {/if}
   </section>
 

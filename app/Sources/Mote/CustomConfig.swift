@@ -9,6 +9,7 @@ struct CustomConfig: Decodable, Sendable {
         let statusArguments: [String]
         let refreshArguments: [String]
         let recoverArguments: [String]?
+        let recoverShellCommand: String?
     }
 
     struct Presentation: Decodable, Sendable {
@@ -16,10 +17,16 @@ struct CustomConfig: Decodable, Sendable {
         let endpointLabel: String?
     }
 
-    struct ReviewLoop: Decodable, Sendable {
+    struct LoopsYaml: Decodable, Sendable {
         let label: String
-        let statePath: String
-        let ordersPath: String
+        let executable: String
+        let configPath: String
+    }
+
+    struct Terrarium: Decodable, Sendable {
+        let label: String
+        let executable: String
+        let cwd: String?
     }
 
     struct RemoteCoordinator: Decodable, Sendable {
@@ -41,7 +48,8 @@ struct CustomConfig: Decodable, Sendable {
     let authResource: AuthResource
     let presentation: Presentation?
     let remoteCoordinator: RemoteCoordinator?
-    let reviewLoop: ReviewLoop?
+    let loopsYaml: LoopsYaml?
+    let terrarium: Terrarium?
 
     static func load() throws -> CustomConfig {
         let file = ProcessInfo.processInfo.environment["MOTE_CUSTOM_CONFIG"]

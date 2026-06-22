@@ -82,6 +82,8 @@ final class NativeBridge: NSObject, WKScriptMessageHandler {
             return await runAuthResource(action: .refresh)
         case "authResource.recover":
             return await runAuthResource(action: .recover)
+        case "authResource.mcpStatus":
+            return await runMcpStatus()
         case "remoteCoordinator.overview":
             return await remoteCoordinatorOverview()
         case "remoteCoordinator.acknowledge":
@@ -99,25 +101,90 @@ final class NativeBridge: NSObject, WKScriptMessageHandler {
                 NSWorkspace.shared.open(url)
                 return .success(["opened": true])
             } catch { return .failure(error.localizedDescription) }
-        case "reviewLoop.status":
-            do {
-                guard let config = try CustomConfig.load().reviewLoop else {
-                    return .failure("Review loop is not configured")
-                }
-                let stateURL = URL(fileURLWithPath: NSString(string: config.statePath).expandingTildeInPath)
-                let ordersURL = URL(fileURLWithPath: NSString(string: config.ordersPath).expandingTildeInPath)
-                let stateData = try Data(contentsOf: stateURL)
-                guard let state = try JSONSerialization.jsonObject(with: stateData) as? [String: Any] else {
-                    return .failure("Review loop state is not a JSON object")
-                }
-                let orders = (try? String(contentsOf: ordersURL, encoding: .utf8)) ?? ""
-                return .success(["label": config.label, "state": state, "orders": orders])
-            } catch {
-                return .failure(error.localizedDescription)
-            }
+        case "loopsYaml.status":
+            return await runLoops(arguments: ["inspect"])
+        case "loopsYaml.set":
+            guard let name = arguments["name"] as? String,
+                  let command = arguments["run"] as? String,
+                  !name.isEmpty, !command.isEmpty
+            else { return .failure("Loop name and command are required") }
+            var values = ["set", name, "--run", command]
+            if let schedule = arguments["schedule"] as? String { values += ["--schedule", schedule] }
+            if let cwd = arguments["cwd"] as? String { values += ["--cwd", cwd] }
+            return await runLoops(arguments: values)
+        case "loopsYaml.delete":
+            guard let name = arguments["name"] as? String, !name.isEmpty else { return .failure("Loop name is required") }
+            return await runLoops(arguments: ["delete", name])
+        case "loopsYaml.run":
+            guard let name = arguments["name"] as? String, !name.isEmpty else { return .failure("Loop name is required") }
+            return await runLoops(arguments: ["run", name], timeout: 300)
+        case "loopsYaml.logs":
+            guard let name = arguments["name"] as? String, !name.isEmpty else { return .failure("Loop name is required") }
+            return await runLoops(arguments: ["logs", name, "100"])
+        case "loopsYaml.watcher":
+            guard let action = arguments["action"] as? String,
+                  ["start", "stop", "restart"].contains(action)
+            else { return .failure("Watcher action must be start, stop, or restart") }
+            return await runLoops(arguments: ["watcher", action])
+        case "terrarium.status":
+            return await runTerrarium(arguments: ["status"])
+        case "terrarium.doctor":
+            return await runTerrarium(arguments: ["doctor"])
+        case "terrarium.cancel":
+            guard let runId = arguments["runId"] as? String, !runId.isEmpty else { return .failure("Terrarium run ID is required") }
+            return await runTerrarium(arguments: ["cancel", runId])
         default:
             return .failure("Unknown native command: \(command)")
         }
+    }
+
+    private func runTerrarium(arguments: [String], timeout: TimeInterval = 20) async -> BridgeResult {
+        do {
+            guard let config = try CustomConfig.load().terrarium else { return .failure("Terrarium is not configured") }
+            let directory = config.cwd.map { URL(fileURLWithPath: NSString(string: $0).expandingTildeInPath) }
+            let result = await runCommand(
+                executable: URL(fileURLWithPath: NSString(string: config.executable).expandingTildeInPath),
+                arguments: arguments,
+                displayName: "terrarium",
+                timeout: timeout,
+                currentDirectory: directory
+            )
+            guard result.object["ok"] as? Bool == true,
+                  var value = result.object["value"] as? [String: Any]
+            else { return result }
+            value["label"] = config.label
+            if let output = value["output"] as? String,
+               let data = output.data(using: .utf8),
+               let decoded = try? JSONSerialization.jsonObject(with: data) {
+                value["data"] = decoded
+            }
+            return .success(value)
+        } catch { return .failure(error.localizedDescription) }
+    }
+
+    private func runLoops(arguments: [String], timeout: TimeInterval = 20) async -> BridgeResult {
+        do {
+            guard let config = try CustomConfig.load().loopsYaml else { return .failure("loops.yaml is not configured") }
+            let configPath = NSString(string: config.configPath).expandingTildeInPath
+            let directory = URL(fileURLWithPath: configPath).deletingLastPathComponent()
+            let result = await runCommand(
+                executable: URL(fileURLWithPath: NSString(string: config.executable).expandingTildeInPath),
+                arguments: arguments,
+                displayName: "loops",
+                timeout: timeout,
+                currentDirectory: directory
+            )
+            guard result.object["ok"] as? Bool == true,
+                  var value = result.object["value"] as? [String: Any]
+            else { return result }
+            value["label"] = config.label
+            if let output = value["output"] as? String,
+               let data = output.data(using: .utf8),
+               let decoded = try? JSONSerialization.jsonObject(with: data) {
+                value["data"] = decoded
+            }
+            return .success(value)
+        } catch { return .failure(error.localizedDescription) }
     }
 
     private func runScript(name: String, arguments: [String]) async -> BridgeResult {
@@ -152,6 +219,14 @@ final class NativeBridge: NSObject, WKScriptMessageHandler {
                 arguments = config.refreshArguments
                 timeout = 60
             case .recover:
+                if let shellCommand = config.recoverShellCommand, !shellCommand.isEmpty {
+                    return await runCommand(
+                        executable: URL(fileURLWithPath: "/bin/zsh"),
+                        arguments: ["-ic", shellCommand],
+                        displayName: "configured auth recovery",
+                        timeout: 300
+                    )
+                }
                 guard let recoverArguments = config.recoverArguments, !recoverArguments.isEmpty else {
                     return .failure("Auth recovery is not configured")
                 }
@@ -174,6 +249,23 @@ final class NativeBridge: NSObject, WKScriptMessageHandler {
         } catch {
             return .failure(error.localizedDescription)
         }
+    }
+
+    private func runMcpStatus() async -> BridgeResult {
+        do {
+            let config = try CustomConfig.load().authResource
+            let result = await runCommand(
+                executable: URL(fileURLWithPath: "/opt/homebrew/bin/opencode"),
+                arguments: ["mcp", "list"],
+                displayName: "opencode mcp",
+                timeout: 20
+            )
+            guard result.object["ok"] as? Bool == true,
+                  var value = result.object["value"] as? [String: Any]
+            else { return result }
+            value["resourceId"] = config.resourceId
+            return .success(value)
+        } catch { return .failure(error.localizedDescription) }
     }
 
     private enum CoordinatorOperation {
@@ -254,13 +346,13 @@ final class NativeBridge: NSObject, WKScriptMessageHandler {
         return token
     }
 
-    private func runCommand(executable: URL, arguments: [String], displayName: String, timeout: TimeInterval) async -> BridgeResult {
+    private func runCommand(executable: URL, arguments: [String], displayName: String, timeout: TimeInterval, currentDirectory: URL? = nil) async -> BridgeResult {
         await Task.detached(priority: .userInitiated) {
-            Self.runCommandSynchronously(executable: executable, arguments: arguments, displayName: displayName, timeout: timeout)
+            Self.runCommandSynchronously(executable: executable, arguments: arguments, displayName: displayName, timeout: timeout, currentDirectory: currentDirectory)
         }.value
     }
 
-    nonisolated private static func runCommandSynchronously(executable: URL, arguments: [String], displayName: String, timeout: TimeInterval) -> BridgeResult {
+    nonisolated private static func runCommandSynchronously(executable: URL, arguments: [String], displayName: String, timeout: TimeInterval, currentDirectory: URL? = nil) -> BridgeResult {
         let startedAt = Date()
         let command = ([displayName] + arguments).joined(separator: " ")
         log("start \(displayName)")
@@ -271,6 +363,7 @@ final class NativeBridge: NSObject, WKScriptMessageHandler {
         let process = Process()
         process.executableURL = executable
         process.arguments = arguments
+        process.currentDirectoryURL = currentDirectory
         let stdout = Pipe()
         let stderr = Pipe()
         process.standardOutput = stdout

@@ -26,17 +26,56 @@ struct NativeBridgeTests {
         """
         try authCliContents.write(to: authCli, atomically: true, encoding: .utf8)
         try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: authCli.path)
+        let loopsConfig = directory.appendingPathComponent("loops.yaml")
+        try "loops:\n".write(to: loopsConfig, atomically: true, encoding: .utf8)
+        let loopsCLI = directory.appendingPathComponent("loops.sh")
+        let loopsCLIContents = """
+        #!/bin/bash
+        if [[ "$1" == "inspect" ]]; then
+          printf '%s' '{"configPath":"loops.yaml","watcher":{"running":false,"record":null},"loops":[]}'
+        else
+          printf '{"arguments":"%s"}' "$*"
+        fi
+        """
+        try loopsCLIContents.write(to: loopsCLI, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: loopsCLI.path)
+        let terrariumCLI = directory.appendingPathComponent("terrarium.sh")
+        let terrariumCLIContents = """
+        #!/bin/bash
+        if [[ "$1" == "status" ]]; then
+          printf '%s' '{"activeCount":1,"runs":[{"runId":"ter_test","status":"running","task":"test","progressText":"working"}]}'
+        elif [[ "$1" == "doctor" ]]; then
+          printf '%s' '{"ok":true,"checks":{"activeRuns":1,"orphanedRuns":0,"needsAttentionRuns":0,"groups":0,"subscribers":0,"pendingCallbacks":0,"inflightCallbacks":0,"staleChildClaims":0},"warnings":[]}'
+        else
+          printf '{"cancelled":true}'
+        fi
+        """
+        try terrariumCLIContents.write(to: terrariumCLI, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: terrariumCLI.path)
         let config = directory.appendingPathComponent("custom.json")
+        let authConfiguration: [String: Any] = [
+            "label": "Configured auth",
+            "resourceId": "configured-auth",
+            "executable": "/bin/bash",
+            "cli": authCli.path,
+            "statusArguments": ["status"],
+            "refreshArguments": ["refresh"],
+            "recoverArguments": ["recover", "configured-auth", "--run"]
+        ]
+        let loopsConfiguration: [String: Any] = [
+            "label": "loops.yaml",
+            "executable": loopsCLI.path,
+            "configPath": loopsConfig.path
+        ]
+        let terrariumConfiguration: [String: Any] = [
+            "label": "Terrarium",
+            "executable": terrariumCLI.path,
+            "cwd": directory.path
+        ]
         try JSONSerialization.data(withJSONObject: [
-            "authResource": [
-                "label": "Configured auth",
-                "resourceId": "configured-auth",
-                "executable": "/bin/bash",
-                "cli": authCli.path,
-                "statusArguments": ["status"],
-                "refreshArguments": ["refresh"],
-                "recoverArguments": ["recover", "configured-auth", "--run"]
-            ]
+            "authResource": authConfiguration,
+            "loopsYaml": loopsConfiguration,
+            "terrarium": terrariumConfiguration
         ]).write(to: config)
         setenv("MOTE_SCRIPT_DIRECTORY", directory.path, 1)
         setenv("MOTE_CUSTOM_CONFIG", config.path, 1)
@@ -92,6 +131,38 @@ struct NativeBridgeTests {
     }
 
     @Test @MainActor
+    func loopsCommandsUseConfiguredExecutableAndDecodeStatus() async throws {
+        let bridge = NativeBridge()
+        let status = await bridge.execute(command: "loopsYaml.status", arguments: [:])
+        #expect(status.object["ok"] as? Bool == true)
+        let value = try #require(status.object["value"] as? [String: Any])
+        #expect(value["label"] as? String == "loops.yaml")
+        let data = try #require(value["data"] as? [String: Any])
+        #expect((data["loops"] as? [Any])?.isEmpty == true)
+
+        let set = await bridge.execute(command: "loopsYaml.set", arguments: ["name": "review", "run": "echo hi", "schedule": "*/5 * * * *"])
+        #expect(set.object["ok"] as? Bool == true)
+        let setValue = try #require(set.object["value"] as? [String: Any])
+        #expect((setValue["output"] as? String)?.contains("set review --run echo hi") == true)
+    }
+
+    @Test @MainActor
+    func terrariumCommandsUseConfiguredExecutableAndDecodeStatus() async throws {
+        let bridge = NativeBridge()
+        let status = await bridge.execute(command: "terrarium.status", arguments: [:])
+        #expect(status.object["ok"] as? Bool == true)
+        let value = try #require(status.object["value"] as? [String: Any])
+        #expect(value["label"] as? String == "Terrarium")
+        let data = try #require(value["data"] as? [String: Any])
+        #expect(data["activeCount"] as? Int == 1)
+
+        let doctor = await bridge.execute(command: "terrarium.doctor", arguments: [:])
+        #expect(doctor.object["ok"] as? Bool == true)
+        let cancel = await bridge.execute(command: "terrarium.cancel", arguments: ["runId": "ter_test"])
+        #expect(cancel.object["ok"] as? Bool == true)
+    }
+
+    @Test @MainActor
     func invalidCommandsFailClosed() async {
         let bridge = NativeBridge()
         let unknown = await bridge.execute(command: "shell.anything", arguments: [:])
@@ -108,5 +179,8 @@ struct NativeBridgeTests {
             arguments: ["action": "start", "mode": "danger"]
         )
         #expect(invalidMode.object["ok"] as? Bool == false)
+
+        let invalidWatcher = await bridge.execute(command: "loopsYaml.watcher", arguments: ["action": "destroy"])
+        #expect(invalidWatcher.object["ok"] as? Bool == false)
     }
 }
