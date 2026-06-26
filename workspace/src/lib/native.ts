@@ -45,7 +45,7 @@ function demo(command: string, arguments_: Record<string, unknown>): MoteResult 
       ],
     },
   };
-  if (command === "authResource.mcpStatus") return { output: "●  ✓ cf-portal connected" };
+  if (command === "authResource.mcpStatus") return { output: "●  ✓ configured-auth connected", resourceId: "configured-auth" };
   if (command === "terrarium.status") return { label: "Terrarium", data: { activeCount: 2, runs: [{ runId: "ter_demo_alpha", status: "running", task: "Research architecture", progressText: "reading docs", needsAttention: false, startedAt: new Date().toISOString() }, { runId: "ter_demo_beta", status: "running", task: "Review tests", progressText: "running checks", needsAttention: true, startedAt: new Date().toISOString() }] } };
   if (command === "terrarium.doctor") return { label: "Terrarium", data: { ok: true, checks: { activeRuns: 2, orphanedRuns: 0, needsAttentionRuns: 1, groups: 1, subscribers: 2, pendingCallbacks: 0, inflightCallbacks: 0, staleChildClaims: 0 }, warnings: [] } };
   if (command === "terrarium.cancel") return { output: "cancel requested", exitCode: 0 };

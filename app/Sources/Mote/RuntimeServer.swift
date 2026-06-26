@@ -21,11 +21,33 @@ final class RuntimeServer {
     func start() async throws -> URL {
         if await probe() { return url }
         try launch()
-        for _ in 0..<80 {
+        // Wait up to 30s: cold Node + first-run Vite dependency optimization can
+        // exceed the old 8s window, which previously surfaced as "failed to start".
+        for _ in 0..<300 {
             if await probe() { return url }
             try await Task.sleep(for: .milliseconds(100))
         }
         throw RuntimeError.startTimedOut(logURL.path)
+    }
+
+    /// True when the Vite child process is still alive.
+    var childAlive: Bool { process?.isRunning == true }
+
+    /// Idempotent health gate used by the supervisor. Returns true when the
+    /// runtime answers on its port. If the child has died (Vite crash, node
+    /// breakage) it relaunches it and waits briefly for readiness, so a broken
+    /// runtime self-heals instead of leaving the panel stuck on an error page.
+    func ensureHealthy() async -> Bool {
+        if await probe() { return true }
+        if !childAlive {
+            stop()
+            do { try launch() } catch { return false }
+        }
+        for _ in 0..<150 {
+            if await probe() { return true }
+            try? await Task.sleep(for: .milliseconds(100))
+        }
+        return await probe()
     }
 
     func stop() {
@@ -61,14 +83,28 @@ final class RuntimeServer {
         let handle = try FileHandle(forWritingTo: logURL, createIfNeeded: true)
         try handle.seekToEnd()
 
-        let vite = workspaceURL.appendingPathComponent("node_modules/.bin/vite")
-        guard FileManager.default.isExecutableFile(atPath: vite.path) else {
+        // Launch Vite through an explicit Node binary running vite.js directly.
+        // Executing the node_modules/.bin/vite shebang script is unreliable on
+        // current macOS (Gatekeeper kills the shebang-launched interpreter),
+        // while an explicit Node + script path runs cleanly.
+        let viteScript = workspaceURL.appendingPathComponent("node_modules/vite/bin/vite.js")
+        guard FileManager.default.fileExists(atPath: viteScript.path) else {
             throw RuntimeError.installFailed
+        }
+        let nodeCandidates = [
+            ProcessInfo.processInfo.environment["MOTE_NODE"],
+            "/opt/homebrew/bin/node",
+            "/usr/local/bin/node",
+            FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".vite-plus/js_runtime/node/24.18.0/bin/node").path,
+            "/usr/bin/node"
+        ].compactMap { $0 }
+        guard let node = nodeCandidates.first(where: { FileManager.default.isExecutableFile(atPath: $0) }) else {
+            throw RuntimeError.bunNotFound
         }
 
         let child = Process()
-        child.executableURL = vite
-        child.arguments = ["--host", "127.0.0.1", "--port", String(port), "--strictPort"]
+        child.executableURL = URL(fileURLWithPath: node)
+        child.arguments = [viteScript.path, "--host", "127.0.0.1", "--port", String(port), "--strictPort"]
         child.currentDirectoryURL = workspaceURL
         child.standardOutput = handle
         child.standardError = handle

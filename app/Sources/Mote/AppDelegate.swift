@@ -5,6 +5,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private let panelController = PanelController()
     private var runtime: RuntimeServer!
+    private var supervisor: Task<Void, Never>?
+    private var runtimeHealthy = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -16,17 +18,49 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             guard let self else { return }
             do {
                 let url = try await self.runtime.start()
-                self.panelController.load(url)
-                self.statusItem.button?.toolTip = "Mote · \(workspace.lastPathComponent)"
+                self.markHealthy(workspace: workspace, url: url)
             } catch {
+                // Don't give up: show the error, but let the supervisor keep
+                // trying and reload the panel the moment the runtime recovers.
                 self.panelController.showError(error.localizedDescription)
-                self.statusItem.button?.toolTip = "Mote · runtime error"
-                self.statusItem.button?.contentTintColor = .systemRed
+                self.statusItem.button?.toolTip = "Mote · starting…"
+                self.statusItem.button?.contentTintColor = .systemOrange
+            }
+            self.startSupervisor(workspace: workspace)
+        }
+    }
+
+    private func markHealthy(workspace: URL, url: URL) {
+        runtimeHealthy = true
+        panelController.load(url)
+        statusItem.button?.toolTip = "Mote · \(workspace.lastPathComponent)"
+        statusItem.button?.contentTintColor = nil
+    }
+
+    /// Periodically verifies the Svelte runtime is answering. If the Vite child
+    /// crashed or Node briefly broke, RuntimeServer.ensureHealthy() relaunches it;
+    /// on any unhealthy→healthy transition we reload the panel so a stale error
+    /// page never sticks. This is what makes Mote self-healing.
+    private func startSupervisor(workspace: URL) {
+        supervisor?.cancel()
+        supervisor = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(5))
+                guard let self else { return }
+                let healthy = await self.runtime.ensureHealthy()
+                if healthy && !self.runtimeHealthy {
+                    self.markHealthy(workspace: workspace, url: self.runtime.url)
+                } else if !healthy && self.runtimeHealthy {
+                    self.runtimeHealthy = false
+                    self.statusItem.button?.toolTip = "Mote · recovering…"
+                    self.statusItem.button?.contentTintColor = .systemOrange
+                }
             }
         }
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        supervisor?.cancel()
         runtime?.stop()
     }
 

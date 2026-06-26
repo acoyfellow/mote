@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { Activity, ChevronRight, Clock3, FolderOpen, KeyRound, Laptop, Moon, Pencil, Play, Plus, Power, RefreshCw, Save, Square, Sparkles, Trash2, Wrench, X } from "@lucide/svelte";
+  import { Activity, ChevronRight, Clock3, FolderOpen, Laptop, Moon, Pencil, Play, Plus, Power, RefreshCw, Save, Square, Sparkles, Trash2, Wrench, X } from "@lucide/svelte";
   import { native, type MachineAction, type MachineMode } from "./lib/native";
 
   let machineOutput = $state("checking");
@@ -83,6 +83,7 @@
   });
   const diskFree = $derived(maintenanceOutput.match(/Disk free:\s*([^·\n]+)/)?.[1]?.trim() ?? "—");
   const lastCleanup = $derived(maintenanceOutput.match(/Last cleanup:\s*(.+)/)?.[1]?.trim() ?? "—");
+  const lastReclaimed = $derived(maintenanceOutput.match(/Last reclaimed:\s*(.+)/)?.[1]?.trim() ?? "never");
   const terrariumRuns = $derived(terrariumState.runs ?? []);
   const terrariumAttention = $derived(terrariumRuns.filter((run) => run.needsAttention));
   const terrariumActive = $derived(terrariumDoctor.checks?.activeRuns ?? terrariumState.activeCount ?? 0);
@@ -121,7 +122,8 @@
 
   function readMcpStatus(result: Record<string, unknown>): Pick<PortalStatus, "mcpState"> {
     const clean = String(result.output ?? "").replace(/\x1b\[[0-9;?]*[ -/]*[@-~]/g, "");
-    const line = clean.split("\n").find((value) => value.includes("cf-portal")) ?? "";
+    const resourceId = String(result.resourceId ?? "");
+    const line = resourceId ? clean.split("\n").find((value) => value.includes(resourceId)) ?? "" : "";
     if (line.includes("connected")) return { mcpState: "connected" };
     if (line.includes("needs authentication")) return { mcpState: "needs authentication" };
     return { mcpState: "unknown" };
@@ -318,7 +320,7 @@
       const configured = await loadConfiguration();
       if (!configured) return;
     }
-    await Promise.all([refreshCore(), refreshPortal(), refreshRemote(), refreshLoops(), refreshTerrarium()]);
+    await Promise.all([refreshCore(), refreshRemote(), refreshLoops()]);
     void refreshMaintenance();
   }
 
@@ -356,10 +358,8 @@
       void refreshAll();
       timers.push(window.setInterval(refreshCore, 30_000));
       timers.push(window.setInterval(refreshMaintenance, 5 * 60_000));
-      timers.push(window.setInterval(refreshPortal, 30_000));
       timers.push(window.setInterval(refreshRemote, 30_000));
       timers.push(window.setInterval(refreshLoops, 30_000));
-      timers.push(window.setInterval(refreshTerrarium, 5_000));
     })();
     return () => {
       for (const timer of timers) window.clearInterval(timer);
@@ -434,24 +434,6 @@
     </div>
   </section>
 
-  <section class="portal-card" class:healthy={portalHealthy}>
-    <div class="icon-well small"><KeyRound size={16} strokeWidth={1.8} /></div>
-    <div class="portal-copy">
-      <span>{authLabel}</span>
-      <strong>{portalHealthy ? "Connected" : portalStatus.state === "checking" ? "Checking…" : "Reconnect needed"}</strong>
-      <small>{portalDetail}</small>
-    </div>
-    <span class="portal-state"><i></i>{portalStatus.mcpState ?? "checking"}</span>
-    {#if portalMissing}
-      <button class="recover-action" disabled={portalBusy} onclick={recoverPortal}>
-        <Wrench size={14} strokeWidth={1.8} /> {portalRecovering ? "Reconnecting…" : "Reconnect"}
-      </button>
-    {/if}
-    <button class:spinning={portalRefreshing} disabled={portalBusy} aria-label="Refresh configured auth" onclick={() => refreshPortal(true)}>
-      <RefreshCw size={14} strokeWidth={1.8} />
-    </button>
-  </section>
-
   <section class="remote-card" class:online={remoteConnected} class:degraded={!!remoteError}>
     <div class="remote-summary">
       <div class="icon-well small"><Activity size={16} /></div>
@@ -492,29 +474,6 @@
         {/each}
       </div>
     {/if}
-  </section>
-
-  <section class="review-card terrarium-card" class:blocked={terrariumAttention.length > 0 || (terrariumDoctor.checks?.orphanedRuns ?? 0) > 0}>
-    <div class="review-summary">
-      <div class="icon-well small"><Sparkles size={16} /></div>
-      <div class="review-copy">
-        <span>{terrariumLabel}</span>
-        <strong>{terrariumError ? "Unavailable" : `${terrariumActive} active run${terrariumActive === 1 ? "" : "s"}`}</strong>
-        <small>{terrariumError ?? `${terrariumAttention.length} need attention · ${terrariumDoctor.checks?.groups ?? 0} groups · ${terrariumDoctor.checks?.pendingCallbacks ?? 0} pending callbacks`}</small>
-      </div>
-      <button class:spinning={terrariumRefreshing} disabled={terrariumRefreshing} aria-label="Refresh Terrarium" onclick={refreshTerrarium}><RefreshCw size={14} /></button>
-    </div>
-    <div class="review-list terrarium-list">
-      {#each terrariumRuns.slice(0, 5) as run (run.runId)}
-        <div class="review-row terrarium-row" class:attention={run.needsAttention}>
-          <div class="loop-main"><span><strong>{run.task || "Unnamed task"}</strong><small>{run.status ?? "unknown"} · {run.progressText ?? "waiting"} · {run.runId.slice(-8)}</small></span></div>
-          {#if run.needsAttention}<span class="pill warn">attention</span>{/if}
-          {#if run.status === "running"}<button title="Cancel run" disabled={busy?.startsWith("terrarium-cancel-")} onclick={() => cancelTerrarium(run.runId)}><Square size={13} /></button>{/if}
-        </div>
-      {:else}
-        <p class="review-empty">No active Terrarium runs. Launch one from Pi or the CLI.</p>
-      {/each}
-    </div>
   </section>
 
   <section class="review-card loops-card" class:blocked={loops.some((loop) => loop.latest?.exitCode != null && loop.latest.exitCode !== 0)}>
@@ -588,6 +547,7 @@
       <div class="mini-title"><Activity size={16} /><span>System</span><i class="active"></i></div>
       <strong>{maintenanceRefreshing && maintenanceOutput === "checking" ? "Checking…" : `${diskFree} free`}</strong>
       <small>cleanup {lastCleanup}</small>
+      <small>reclaimed {lastReclaimed}</small>
       <button class="text-action" disabled={cleanupBusy} onclick={() => run("cleanup", async () => {
         await native.maintenance.cleanup();
         await refreshMaintenance();

@@ -327,6 +327,20 @@ button:disabled { opacity: .48; }
 .review-row small { margin-top: 2px; color: var(--muted); font-size: 7px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .review-row:hover strong { color: var(--teal); }
 .review-empty { margin: 9px 0 0; padding-top: 8px; border-top: 1px solid var(--line-soft); color: var(--muted); font-size: 8px; }
+.loops-card .watcher-action { width: auto; padding: 0 8px; display: flex; gap: 4px; font-size: 8px; }
+.loop-row > button { flex: none; width: 27px; height: 27px; padding: 0; display: grid; place-items: center; }
+.loop-row > .loop-main { min-width: 0; width: auto; height: auto; flex: 1; padding: 7px 2px; border: 0; background: transparent; text-align: left; }
+.loop-main > span { min-width: 0; display: grid; }
+.loop-row .danger-action:hover { color: #9b2a17; border-color: rgba(255,90,54,.45); }
+.loop-editor, .loop-logs { margin-top: 10px; padding: 10px; border: 1px solid var(--line-soft); background: rgba(251,247,234,.64); }
+.editor-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; color: var(--carbon); font-size: 10px; }
+.editor-heading button { width: 25px; height: 25px; padding: 0; display: grid; place-items: center; }
+.loop-editor label { display: grid; gap: 4px; margin-top: 7px; color: var(--muted); font: 700 7px var(--mono); text-transform: uppercase; letter-spacing: .07em; }
+.loop-editor input, .loop-editor textarea { width: 100%; padding: 7px 8px; border: 1px solid var(--line); outline: none; resize: vertical; color: var(--carbon); background: rgba(255,255,255,.7); font: 9px var(--mono); text-transform: none; letter-spacing: 0; }
+.loop-editor input:focus, .loop-editor textarea:focus { border-color: rgba(7,92,89,.52); }
+.editor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.loop-editor > .primary { margin-top: 9px; height: 29px; padding: 0 10px; display: flex; align-items: center; gap: 5px; font-size: 8px; }
+.loop-logs pre { max-height: 180px; margin: 0; padding: 8px; overflow: auto; white-space: pre-wrap; color: var(--carbon); background: rgba(23,32,25,.06); font: 8px/1.45 var(--mono); }
 
 .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
 .mini-card { min-width: 0; min-height: 141px; padding: 12px; display: flex; flex-direction: column; }
