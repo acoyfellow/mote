@@ -83,6 +83,23 @@ Current bridge commands:
 | `maintenance` | report, cleanup |
 | `authResource` | status, refresh, recover |
 | `remoteCoordinator` | overview, acknowledge, steer, open |
+| `pulse` | recent, ack (optional native fallback; see below) |
+
+### Pulse (finished agent runs)
+
+The panel shows terminal Terrarium runs in a "Pulse" section. By default it talks
+to the Pulse feed (`https://terrarium.coey.dev`) directly from the WKWebView with
+`fetch()` — **no Swift recompile required**. Configuration is read by
+`workspace/src/lib/pulse.ts`, in priority order:
+
+1. `window.__MOTE_PULSE__ = { token, url?, subscriberId?, ownerRunId? }` (runtime, no rebuild)
+2. Vite env `VITE_PULSE_TOKEN` / `VITE_PULSE_URL` / `VITE_PULSE_SUBSCRIBER_ID` / `VITE_PULSE_OWNER_RUN_ID` (build time)
+
+No token is committed; if no token is present the section renders as "Pulse
+disabled". A native fallback exists (`native.pulse.recent()`/`ack()`) for cases
+where a token cannot be handed to the webview safely — it returns demo data in
+mock mode, and the real path needs a matching Swift `"pulse.recent"`/`"pulse.ack"`
+handler in `app/Sources/Mote/NativeBridge.swift` (not yet implemented).
 
 The current custom surface invokes a neutral custom script directory at `~/.mote/scripts` by default. Those implementations can move behind native or LaunchAgent-backed capabilities later without changing the Svelte API.
 

@@ -49,6 +49,11 @@ function demo(command: string, arguments_: Record<string, unknown>): MoteResult 
   if (command === "terrarium.status") return { label: "Terrarium", data: { activeCount: 2, runs: [{ runId: "ter_demo_alpha", status: "running", task: "Research architecture", progressText: "reading docs", needsAttention: false, startedAt: new Date().toISOString() }, { runId: "ter_demo_beta", status: "running", task: "Review tests", progressText: "running checks", needsAttention: true, startedAt: new Date().toISOString() }] } };
   if (command === "terrarium.doctor") return { label: "Terrarium", data: { ok: true, checks: { activeRuns: 2, orphanedRuns: 0, needsAttentionRuns: 1, groups: 1, subscribers: 2, pendingCallbacks: 0, inflightCallbacks: 0, staleChildClaims: 0 }, warnings: [] } };
   if (command === "terrarium.cancel") return { output: "cancel requested", exitCode: 0 };
+  if (command === "pulse.recent") return { label: "Pulse", data: { enabled: true, events: [
+    { eventId: "evt_demo_1", runId: "ter_demo_alpha", status: "ok", ok: true, task: "Research architecture", summary: "wrote summary", finishedAt: new Date(Date.now() - 45_000).toISOString() },
+    { eventId: "evt_demo_2", runId: "ter_demo_beta", status: "error", ok: false, task: "Review tests", summary: "2 checks failed", finishedAt: new Date(Date.now() - 5 * 60_000).toISOString() },
+  ] } };
+  if (command === "pulse.ack") return { ok: true };
   if (command.startsWith("loopsYaml.")) return { data: { ok: true }, output: "ok" };
   if (command === "authResource.status" || command === "authResource.refresh" || command === "authResource.recover") {
     return {
@@ -101,6 +106,16 @@ export const native = {
     status: () => invoke("terrarium.status"),
     doctor: () => invoke("terrarium.doctor"),
     cancel: (runId: string) => invoke("terrarium.cancel", { runId }),
+  },
+  // Optional native fallback for Pulse. The panel prefers a direct fetch() from
+  // the webview (see lib/pulse.ts). These bridge stubs exist so the panel can
+  // render Pulse through the existing native pattern when a token cannot be
+  // supplied to the webview safely. The Swift side needs a matching
+  // "pulse.recent"/"pulse.ack" handler for the real (non-mock) path — see
+  // README note. Mock mode returns demo data above.
+  pulse: {
+    recent: (limit = 10) => invoke("pulse.recent", { limit }),
+    ack: (eventId: string) => invoke("pulse.ack", { eventId }),
   },
   loopsYaml: {
     status: () => invoke("loopsYaml.status"),

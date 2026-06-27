@@ -1,7 +1,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { Activity, ChevronRight, Clock3, FolderOpen, Laptop, Moon, Pencil, Play, Plus, Power, RefreshCw, Save, Square, Sparkles, Trash2, Wrench, X } from "@lucide/svelte";
+  import { Activity, ChevronRight, Clock3, FolderOpen, Laptop, Moon, Pencil, Play, Plus, Power, RefreshCw, Save, Square, Sparkles, Trash2, Wrench, X, Zap } from "@lucide/svelte";
   import { native, type MachineAction, type MachineMode } from "./lib/native";
+  import { resolvePulseConfig, pulseRecent, pulseAck, type PulseConfig, type PulseEvent } from "./lib/pulse";
 
   let machineOutput = $state("checking");
   let reachabilityOutput = $state("checking");
@@ -50,6 +51,14 @@
   let terrariumRefreshing = $state(false);
   let terrariumError = $state<string | null>(null);
 
+  // Pulse: terminal (finished) agent-run events from Terrarium's pulse feed.
+  const pulseConfig: PulseConfig = resolvePulseConfig();
+  let pulseEnabled = $state(pulseConfig.enabled);
+  let pulseEvents = $state<PulseEvent[]>([]);
+  let pulseRefreshing = $state(false);
+  let pulseError = $state<string | null>(null);
+  let pulseSource = $state<"fetch" | "bridge" | null>(null);
+
   const unreadAttention = $derived(attentionItems.filter((item) => !item.seen_at));
   const loops = $derived(loopsState.loops ?? []);
   const watcherRunning = $derived(loopsState.watcher?.running === true);
@@ -87,6 +96,7 @@
   const terrariumRuns = $derived(terrariumState.runs ?? []);
   const terrariumAttention = $derived(terrariumRuns.filter((run) => run.needsAttention));
   const terrariumActive = $derived(terrariumDoctor.checks?.activeRuns ?? terrariumState.activeCount ?? 0);
+  const pulseFailed = $derived(pulseEvents.filter((event) => event.ok === false || event.status === "error" || event.status === "timeout").length);
 
   async function refreshCore() {
     if (refreshing) return;
@@ -207,6 +217,51 @@
     await refreshTerrarium();
   }
 
+  async function refreshPulse() {
+    if (pulseRefreshing) return;
+    pulseRefreshing = true;
+    try {
+      let events: PulseEvent[] = [];
+      if (pulseConfig.enabled) {
+        // Preferred path: direct fetch() from the webview. No Swift recompile.
+        events = await pulseRecent(pulseConfig, 10);
+        pulseSource = "fetch";
+        pulseEnabled = true;
+      } else if (typeof native.pulse?.recent === "function") {
+        // Fallback path: native bridge (returns demo in mock mode; real mode
+        // needs a matching Swift "pulse.recent" handler).
+        const result = (await native.pulse.recent(10)) as { data?: { enabled?: boolean; events?: PulseEvent[] } };
+        const data = result.data ?? {};
+        pulseEnabled = data.enabled !== false;
+        events = Array.isArray(data.events) ? data.events : [];
+        pulseSource = pulseEnabled ? "bridge" : null;
+      } else {
+        pulseEnabled = false;
+      }
+      pulseEvents = events;
+      pulseError = null;
+    } catch (reason) {
+      pulseError = reason instanceof Error ? reason.message : String(reason);
+      pulseEvents = [];
+    } finally {
+      pulseRefreshing = false;
+    }
+  }
+
+  async function dismissPulse(event: PulseEvent) {
+    // Optimistically drop from the list, then ack via whichever source we use.
+    pulseEvents = pulseEvents.filter((item) => item.eventId !== event.eventId);
+    try {
+      if (pulseSource === "fetch") {
+        await pulseAck(pulseConfig, event.eventId);
+      } else if (typeof native.pulse?.ack === "function") {
+        await native.pulse.ack(event.eventId);
+      }
+    } catch (reason) {
+      pulseError = reason instanceof Error ? reason.message : String(reason);
+    }
+  }
+
   async function refreshLoops() {
     if (loopsRefreshing) return;
     loopsRefreshing = true;
@@ -322,6 +377,7 @@
     }
     await Promise.all([refreshCore(), refreshRemote(), refreshLoops()]);
     void refreshMaintenance();
+    void refreshPulse();
   }
 
   async function run(name: string, operation: () => Promise<unknown>) {
@@ -360,6 +416,7 @@
       timers.push(window.setInterval(refreshMaintenance, 5 * 60_000));
       timers.push(window.setInterval(refreshRemote, 30_000));
       timers.push(window.setInterval(refreshLoops, 30_000));
+      timers.push(window.setInterval(refreshPulse, 8_000));
     })();
     return () => {
       for (const timer of timers) window.clearInterval(timer);
@@ -525,6 +582,35 @@
 
     {#if loopLogs}
       <div class="loop-logs"><div class="editor-heading"><strong>{loopLogs.name} logs</strong><button aria-label="Close logs" onclick={() => loopLogs = null}><X size={14} /></button></div><pre>{loopLogs.text}</pre></div>
+    {/if}
+  </section>
+
+  <section class="review-card pulse-card" class:online={pulseEnabled && pulseEvents.length > 0} class:degraded={!!pulseError} class:blocked={pulseFailed > 0}>
+    <div class="review-summary">
+      <div class="icon-well small"><Zap size={16} /></div>
+      <div class="review-copy">
+        <span>Pulse</span>
+        <strong>{pulseError ? "Unavailable" : pulseEnabled ? `${pulseEvents.length} finished` : "Pulse disabled"}</strong>
+        <small>{pulseError ?? (pulseEnabled ? `${pulseFailed} failed · ${pulseSource ?? "idle"}` : "no token · set VITE_PULSE_TOKEN or window.__MOTE_PULSE__")}</small>
+      </div>
+      <button class:spinning={pulseRefreshing} disabled={pulseRefreshing} aria-label="Refresh pulse" onclick={refreshPulse}><RefreshCw size={14} /></button>
+    </div>
+
+    {#if pulseEnabled}
+      <div class="review-list pulse-list">
+        {#each pulseEvents.slice(0, 5) as event (event.eventId)}
+          <div class="review-row pulse-row" class:failed={event.ok === false || event.status === "error" || event.status === "timeout"}>
+            <i class="pulse-dot" class:ok={event.ok !== false && event.status !== "error" && event.status !== "timeout"}></i>
+            <span>
+              <strong>{event.task || event.runId}</strong>
+              <small>{event.status ?? (event.ok === false ? "error" : "ok")} · {event.runId} · {formatSessionTime(event.finishedAt)}</small>
+            </span>
+            <button title="Dismiss" aria-label="Dismiss pulse event" onclick={() => dismissPulse(event)}><X size={13} /></button>
+          </div>
+        {:else}
+          <p class="review-empty">No finished runs yet. Terminal agent runs will appear here.</p>
+        {/each}
+      </div>
     {/if}
   </section>
 

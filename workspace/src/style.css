@@ -19,7 +19,9 @@
 }
 
 * { box-sizing: border-box; }
+html, body { height: 100%; }
 html, body, #app { margin: 0; width: 100%; min-height: 100%; background: transparent; }
+#app { display: flex; flex-direction: column; }
 button { font: inherit; }
 
 body {
@@ -29,7 +31,9 @@ body {
     linear-gradient(90deg, rgba(7,92,89,.055) 1px, transparent 1px) 0 0 / 24px 24px,
     radial-gradient(circle at 78% -10%, rgba(22,184,176,.11), transparent 36%),
     var(--paper);
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 body::after {
@@ -44,9 +48,10 @@ body::after {
 
 main {
   position: relative;
-  min-height: 820px;
-  padding: 14px;
-  overflow: hidden;
+  flex: 1;
+  min-height: 100%;
+  padding: 14px 14px 28px;
+  overflow: visible;
 }
 main::before, main::after {
   content: "";
@@ -341,6 +346,16 @@ button:disabled { opacity: .48; }
 .editor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
 .loop-editor > .primary { margin-top: 9px; height: 29px; padding: 0 10px; display: flex; align-items: center; gap: 5px; font-size: 8px; }
 .loop-logs pre { max-height: 180px; margin: 0; padding: 8px; overflow: auto; white-space: pre-wrap; color: var(--carbon); background: rgba(23,32,25,.06); font: 8px/1.45 var(--mono); }
+
+/* Pulse — finished agent runs. Distinct amber/violet accent vs. the teal cards. */
+.pulse-card { box-shadow: inset 3px 0 0 #7c5cff, 0 12px 34px var(--shadow), inset 0 0 0 1px rgba(255,255,255,.46); }
+.pulse-card .icon-well.small { color: #5b3fd6; }
+.pulse-card.online { border-color: rgba(124,92,255,.42); }
+.pulse-card .review-copy span { color: #5b3fd6; }
+.pulse-row > .pulse-dot { flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--vermilion); box-shadow: 0 0 0 4px rgba(255,90,54,.12); }
+.pulse-row > .pulse-dot.ok { background: var(--cyan); box-shadow: 0 0 0 4px rgba(22,184,176,.14); }
+.pulse-row.failed strong { color: #9b2a17; }
+.pulse-row > button { flex: none; width: 25px; height: 25px; padding: 0; display: grid; place-items: center; }
 
 .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
 .mini-card { min-width: 0; min-height: 141px; padding: 12px; display: flex; flex-direction: column; }
