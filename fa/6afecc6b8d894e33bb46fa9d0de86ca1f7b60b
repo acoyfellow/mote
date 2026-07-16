@@ -1,0 +1,39 @@
+README.md
+  s_e050e2bde8a246::t_a47a2408925e3c 86,105-106
+app/Sources/Mote/NativeBridge.swift
+  s_e050e2bde8a246::t_a3c7ff505de841 14-15,30-37,54,151-158
+app/Sources/Mote/PanelController.swift
+  s_30b74bee55c4f8::t_2f1fed6a301563 93
+app/Sources/Mote/PantryClient.swift
+  s_e050e2bde8a246::t_fd1b40deb140bc 1-107
+workspace/src/App.svelte
+  s_e050e2bde8a246::t_6db80325b3c518 18,54-58,204-227,441,566-616
+workspace/src/lib/native.ts
+  s_e050e2bde8a246::t_2790b9e175bd9b 3-14,34-35,86-89
+workspace/src/style.css
+  s_e050e2bde8a246::t_69b591b83bda0b 321,336-341
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "fa6afecc6b8d894e33bb46fa9d0de86ca1f7b60b",
+  "prompts": {},
+  "sessions": {
+    "s_30b74bee55c4f8": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "019f4177-850b-78dc-9754-6625f37a17af",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jordan Coeyman <jcoeyman@cloudflare.com>"
+    },
+    "s_e050e2bde8a246": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "019e9296-4ed4-786c-96d1-b8237d516f79",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jordan Coeyman <jcoeyman@cloudflare.com>"
+    }
+  }
+}
