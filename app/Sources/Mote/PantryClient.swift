@@ -58,6 +58,7 @@ struct PantryClient: Sendable {
     static func metadataOnly(_ recipe: [String: Any]) -> [String: Any]? {
         guard let name = recipe["name"] as? String,
               let description = recipe["description"] as? String,
+              let inputSchema = recipe["inputSchema"] as? [String: Any],
               let capabilities = recipe["capabilities"] as? [String],
               let status = recipe["status"] as? String,
               let version = recipe["version"] as? Int,
@@ -66,14 +67,14 @@ struct PantryClient: Sendable {
         var result: [String: Any] = [
             "name": name,
             "description": description,
+            "inputSchema": inputSchema,
             "capabilities": capabilities,
             "status": status,
             "version": version,
             "visibility": visibility,
-            "updatedAt": updatedAt
+            "updatedAt": updatedAt,
+            "sourceRunId": recipe["sourceRunId"] as? String ?? NSNull()
         ]
-        if let inputSchema = recipe["inputSchema"] as? [String: Any] { result["inputSchema"] = inputSchema }
-        if let sourceRunID = recipe["sourceRunId"] as? String { result["sourceRunId"] = sourceRunID }
         if let author = recipe["author"] as? String { result["author"] = author }
         return result
     }
