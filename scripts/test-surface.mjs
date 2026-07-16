@@ -18,20 +18,23 @@ page.on("console", (message) => {
 try {
   await page.goto(url, { waitUntil: "networkidle" });
   await page.getByText("Connected", { exact: true }).first().waitFor();
-  await page.getByText("Ready", { exact: true }).waitFor();
   await page.getByText("Remote activity", { exact: true }).waitFor();
   await page.getByText("Review requested", { exact: true }).waitFor();
   await page.getByText("Review the current change", { exact: true }).waitFor();
   await page.getByText("128G free", { exact: true }).waitFor();
+  await page.getByText("Private · owner only", { exact: true }).waitFor();
+  await page.getByText("Shared · recipient readable", { exact: true }).waitFor();
+  await page.getByText("No private recipes found.", { exact: true }).waitFor();
+  await page.getByText("No recipes have been explicitly shared with this owner.", { exact: true }).waitFor();
+
+  const pantryRefresh = page.getByRole("button", { name: "Refresh Pantry recipes" });
+  await pantryRefresh.click();
+  await page.waitForFunction(() => !document.querySelector('[aria-label="Refresh Pantry recipes"]')?.hasAttribute("disabled"));
 
   const refresh = page.getByRole("button", { name: "Refresh status" });
   await refresh.click();
   await refresh.waitFor({ state: "visible" });
   await page.waitForFunction(() => !(document.querySelector('[aria-label="Refresh status"]')?.hasAttribute("disabled")));
-
-  const portalRefresh = page.getByRole("button", { name: "Refresh configured auth" });
-  await portalRefresh.click();
-  await page.waitForFunction(() => !(document.querySelector('[aria-label="Refresh configured auth"]')?.hasAttribute("disabled")));
 
   const remoteRefresh = page.getByRole("button", { name: "Refresh remote activity" });
   await remoteRefresh.click();
@@ -43,7 +46,7 @@ try {
   await page.getByRole("button", { name: "Send" }).click();
 
   for (const name of ["Restart", "Stop", "1 hour", "8 hours", "Run cleanup", "Edit this surface"]) {
-    const button = page.getByRole("button", { name });
+    const button = page.getByRole("button", { name, exact: name === "Restart" });
     await button.waitFor();
     await button.click();
     await page.waitForFunction(() => !Array.from(document.querySelectorAll("button")).some((item) => item.hasAttribute("disabled")), null, { timeout: 3000 });
