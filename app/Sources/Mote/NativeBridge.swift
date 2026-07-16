@@ -11,6 +11,8 @@ final class NativeBridge: NSObject, WKScriptMessageHandler {
 
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         guard
+            message.frameInfo.isMainFrame,
+            Self.isTrustedSurface(message.frameInfo.securityOrigin),
             let body = message.body as? [String: Any],
             let id = body["id"] as? String,
             let command = body["command"] as? String
@@ -25,6 +27,14 @@ final class NativeBridge: NSObject, WKScriptMessageHandler {
 
     func execute(command: String, arguments: [String: Any]) async -> BridgeResult {
         switch command {
+        case "pantry.list":
+            let q = arguments["q"] as? String
+            let capability = arguments["capability"] as? String
+            let scope = arguments["scope"] as? String ?? "owner"
+            guard (q?.count ?? 0) <= 200, (capability?.count ?? 0) <= 120 else {
+                return .failure("Pantry search input is too long")
+            }
+            return await PantryClient().list(q: q, capability: capability, scope: scope)
         case "app.info":
             return .success([
                 "name": "Mote",
@@ -41,7 +51,7 @@ final class NativeBridge: NSObject, WKScriptMessageHandler {
                 ])
             } catch {
                 return .success([
-                    "customConfigured": false,
+                    "customConfigured": true,
                     "machineLabel": "Local service",
                     "endpointLabel": "Optional route"
                 ])
@@ -136,6 +146,14 @@ final class NativeBridge: NSObject, WKScriptMessageHandler {
         default:
             return .failure("Unknown native command: \(command)")
         }
+    }
+
+    static func isTrustedSurface(_ origin: WKSecurityOrigin) -> Bool {
+        isTrustedSurface(protocol: origin.protocol, host: origin.host, port: origin.port)
+    }
+
+    static func isTrustedSurface(protocol: String, host: String, port: Int) -> Bool {
+        `protocol` == "http" && host == "127.0.0.1" && port == 41731
     }
 
     private func runTerrarium(arguments: [String], timeout: TimeInterval = 20) async -> BridgeResult {

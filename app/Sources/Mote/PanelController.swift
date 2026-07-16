@@ -90,7 +90,7 @@ final class PanelController: NSObject, NSWindowDelegate, WKNavigationDelegate {
 
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction) async -> WKNavigationActionPolicy {
         guard let url = navigationAction.request.url else { return .cancel }
-        if url.host == "127.0.0.1" || url.scheme == "about" { return .allow }
+        if (url.scheme == "http" && url.host == "127.0.0.1" && url.port == 41731) || url.scheme == "about" { return .allow }
         if navigationAction.navigationType == .linkActivated {
             NSWorkspace.shared.open(url)
         }

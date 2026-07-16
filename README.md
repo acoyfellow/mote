@@ -83,6 +83,7 @@ Current bridge commands:
 | `maintenance` | report, cleanup |
 | `authResource` | status, refresh, recover |
 | `remoteCoordinator` | overview, acknowledge, steer, open |
+| `pantry` | metadata-only owner/shared list (native credential; no source) |
 | `pulse` | recent, ack (optional native fallback; see below) |
 
 ### Pulse (finished agent runs)
@@ -100,6 +101,8 @@ disabled". A native fallback exists (`native.pulse.recent()`/`ack()`) for cases
 where a token cannot be handed to the webview safely — it returns demo data in
 mock mode, and the real path needs a matching Swift `"pulse.recent"`/`"pulse.ack"`
 handler in `app/Sources/Mote/NativeBridge.swift` (not yet implemented).
+
+The Pantry card is a read-only 0.0.1 shared-recipes surface: it renders separate private owner and opt-in shared recipient shelves, author provenance, visibility, refresh, and unavailable states. The bearer credential stays in native Swift (Keychain first, protected file fallback); recipe source is never sent to Svelte. Recipient-specific invitations, revocation, and in-product publish/manage mutations are planned, not implemented.
 
 The current custom surface invokes a neutral custom script directory at `~/.mote/scripts` by default. Those implementations can move behind native or LaunchAgent-backed capabilities later without changing the Svelte API.
 

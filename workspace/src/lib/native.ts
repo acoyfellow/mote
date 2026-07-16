@@ -1,5 +1,17 @@
 export type MachineMode = "core" | "pi";
 export type MachineAction = "start" | "stop" | "restart";
+export type PantryRecipe = {
+  name: string;
+  description: string;
+  inputSchema: Record<string, unknown>;
+  capabilities: string[];
+  status: "pending" | "enabled" | "disabled";
+  version: number;
+  sourceRunId: string | null;
+  visibility: "private" | "shared";
+  author?: string;
+  updatedAt: string;
+};
 
 type MoteResult = Record<string, unknown>;
 
@@ -19,7 +31,8 @@ async function invoke(command: string, arguments_: Record<string, unknown> = {})
 }
 
 function demo(command: string, arguments_: Record<string, unknown>): MoteResult {
-  if (command === "app.configuration") return { customConfigured: false, machineLabel: "Local service", endpointLabel: "Optional route" };
+  if (command === "pantry.list") return { recipes: [], scope: "owner" };
+  if (command === "app.configuration") return { customConfigured: true, machineLabel: "Local service", endpointLabel: "Optional route" };
   if (command === "machinectl.status") return { output: "running 71193 core", exitCode: 0 };
   if (command === "reachability.status") return { output: "off sleepDisabled=0", exitCode: 0 };
   if (command === "maintenance.report") {
@@ -70,6 +83,10 @@ function demo(command: string, arguments_: Record<string, unknown>): MoteResult 
 }
 
 export const native = {
+  pantry: {
+    list: (options: { q?: string; capability?: string; scope?: "owner" | "shared" } = {}) =>
+      invoke("pantry.list", options),
+  },
   app: {
     info: () => invoke("app.info"),
     configuration: () => invoke("app.configuration"),

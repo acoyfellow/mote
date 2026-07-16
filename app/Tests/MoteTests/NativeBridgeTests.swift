@@ -117,6 +117,20 @@ struct NativeBridgeTests {
     }
 
     @Test @MainActor
+    func missingCustomConfigStillExposesProductSurface() async throws {
+        let previous = getenv("MOTE_CUSTOM_CONFIG").map { String(cString: $0) }
+        setenv("MOTE_CUSTOM_CONFIG", directory.appendingPathComponent("does-not-exist.json").path, 1)
+        defer {
+            if let previous { setenv("MOTE_CUSTOM_CONFIG", previous, 1) }
+            else { unsetenv("MOTE_CUSTOM_CONFIG") }
+        }
+        let result = await NativeBridge().execute(command: "app.configuration", arguments: [:])
+        #expect(result.object["ok"] as? Bool == true)
+        let value = try #require(result.object["value"] as? [String: Any])
+        #expect(value["customConfigured"] as? Bool == true)
+    }
+
+    @Test @MainActor
     func configuredAuthStatusAndRefreshReturnSecretFreeMetadata() async throws {
         let bridge = NativeBridge()
         for command in ["authResource.status", "authResource.refresh", "authResource.recover"] {
@@ -160,6 +174,48 @@ struct NativeBridgeTests {
         #expect(doctor.object["ok"] as? Bool == true)
         let cancel = await bridge.execute(command: "terrarium.cancel", arguments: ["runId": "ter_test"])
         #expect(cancel.object["ok"] as? Bool == true)
+    }
+
+    @Test @MainActor
+    func trustedSurfaceRequiresExactRuntimeOrigin() {
+        #expect(NativeBridge.isTrustedSurface(protocol: "http", host: "127.0.0.1", port: 41731))
+        #expect(!NativeBridge.isTrustedSurface(protocol: "http", host: "127.0.0.1", port: 41730))
+        #expect(!NativeBridge.isTrustedSurface(protocol: "http", host: "localhost", port: 41731))
+        #expect(!NativeBridge.isTrustedSurface(protocol: "https", host: "127.0.0.1", port: 41731))
+    }
+
+    @Test @MainActor
+    func pantryMissingCredentialFailsWithoutNetworkCall() async {
+        let missing = directory.appendingPathComponent("missing-pantry-token")
+        let result = await PantryClient(tokenFile: missing).list()
+        #expect(result.object["ok"] as? Bool == false)
+        #expect(result.object["error"] as? String == "Pantry credential is not configured")
+    }
+
+    @Test
+    func pantryMetadataWhitelistDropsRecipeSourceAndUnknownFields() {
+        let metadata = PantryClient.metadataOnly([
+            "name": "shared_recipe",
+            "description": "safe shared metadata",
+            "inputSchema": ["type": "object"],
+            "capabilities": ["text.transform"],
+            "status": "enabled",
+            "version": 3,
+            "visibility": "shared",
+            "author": "owner-a",
+            "updatedAt": "2026-07-16T00:00:00Z",
+            "code": "return process.env.SECRET",
+            "bearerToken": "must-not-cross"
+        ])
+        #expect(metadata?.keys.contains("code") == false)
+        #expect(metadata?.keys.contains("bearerToken") == false)
+        #expect(metadata?["author"] as? String == "owner-a")
+        #expect(metadata?["visibility"] as? String == "shared")
+    }
+
+    @Test
+    func pantryMetadataRejectsMalformedRows() {
+        #expect(PantryClient.metadataOnly(["name": "missing-fields"]) == nil)
     }
 
     @Test @MainActor

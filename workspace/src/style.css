@@ -318,6 +318,7 @@ button:disabled { opacity: .48; }
 
 .review-card { margin-top: 8px; padding: 10px; }
 .review-card.blocked { border-color: rgba(255,90,54,.5); }
+.review-card.degraded { border-color: rgba(255,90,54,.5); }
 .review-card.needs-input { box-shadow: inset 3px 0 0 var(--vermilion); }
 .review-summary { display: flex; align-items: center; gap: 9px; }
 .review-copy { min-width: 0; display: grid; flex: 1; line-height: 1.12; }
@@ -332,6 +333,12 @@ button:disabled { opacity: .48; }
 .review-row small { margin-top: 2px; color: var(--muted); font-size: 7px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .review-row:hover strong { color: var(--teal); }
 .review-empty { margin: 9px 0 0; padding-top: 8px; border-top: 1px solid var(--line-soft); color: var(--muted); font-size: 8px; }
+.pantry-shelves { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+.pantry-shelf { min-width: 0; padding-top: 8px; border-top: 1px solid var(--line-soft); }
+.shelf-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; color: var(--carbon); font-size: 8px; }
+.shelf-heading small { color: var(--muted); font-size: 7px; }
+.pantry-state { min-height: 28px; border-top: 0; }
+.pantry-trust-note { margin: 10px 0 0; color: var(--muted); font-size: 7px; line-height: 1.4; }
 .loops-card .watcher-action { width: auto; padding: 0 8px; display: flex; gap: 4px; font-size: 8px; }
 .loop-row > button { flex: none; width: 27px; height: 27px; padding: 0; display: grid; place-items: center; }
 .loop-row > .loop-main { min-width: 0; width: auto; height: auto; flex: 1; padding: 7px 2px; border: 0; background: transparent; text-align: left; }

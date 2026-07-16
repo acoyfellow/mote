@@ -15,6 +15,7 @@
   type TerrariumRun = { runId: string; status?: string; task?: string; progressText?: string; needsAttention?: boolean; startedAt?: string; taskContractStatus?: string };
   type TerrariumState = { activeCount?: number; runs?: TerrariumRun[] };
   type TerrariumDoctor = { ok?: boolean; checks?: { activeRuns?: number; orphanedRuns?: number; needsAttentionRuns?: number; groups?: number; subscribers?: number; pendingCallbacks?: number; inflightCallbacks?: number; staleChildClaims?: number }; warnings?: string[] };
+  type PantryRecipe = { name: string; description: string; capabilities?: string[]; status?: string; version?: number; visibility?: string; author?: string; updatedAt?: string };
 
   let maintenanceOutput = $state("checking");
   let customConfigured = $state<boolean | null>(null);
@@ -50,6 +51,11 @@
   let terrariumDoctor = $state<TerrariumDoctor>({});
   let terrariumRefreshing = $state(false);
   let terrariumError = $state<string | null>(null);
+  let pantryRecipes = $state<PantryRecipe[]>([]);
+  let sharedPantryRecipes = $state<PantryRecipe[]>([]);
+  let pantryRefreshing = $state(false);
+  let pantryError = $state<string | null>(null);
+  let sharedPantryError = $state<string | null>(null);
 
   // Pulse: terminal (finished) agent-run events from Terrarium's pulse feed.
   const pulseConfig: PulseConfig = resolvePulseConfig();
@@ -194,6 +200,30 @@
     machineLabel = String(config.machineLabel ?? "Local service");
     endpointLabel = String(config.endpointLabel ?? "Optional route");
     return customConfigured;
+  }
+
+  async function refreshPantry() {
+    if (pantryRefreshing) return;
+    pantryRefreshing = true;
+    const [ownerResult, sharedResult] = await Promise.allSettled([
+      native.pantry.list({ scope: "owner" }),
+      native.pantry.list({ scope: "shared" }),
+    ]);
+    if (ownerResult.status === "fulfilled") {
+      pantryRecipes = Array.isArray(ownerResult.value.recipes) ? ownerResult.value.recipes as PantryRecipe[] : [];
+      pantryError = null;
+    } else {
+      pantryRecipes = [];
+      pantryError = ownerResult.reason instanceof Error ? ownerResult.reason.message : String(ownerResult.reason);
+    }
+    if (sharedResult.status === "fulfilled") {
+      sharedPantryRecipes = Array.isArray(sharedResult.value.recipes) ? sharedResult.value.recipes as PantryRecipe[] : [];
+      sharedPantryError = null;
+    } else {
+      sharedPantryRecipes = [];
+      sharedPantryError = sharedResult.reason instanceof Error ? sharedResult.reason.message : String(sharedResult.reason);
+    }
+    pantryRefreshing = false;
   }
 
   async function refreshTerrarium() {
@@ -409,6 +439,7 @@
   onMount(() => {
     const timers: number[] = [];
     void (async () => {
+      void refreshPantry();
       const configured = await loadConfiguration();
       if (!configured) return;
       void refreshAll();
@@ -531,6 +562,57 @@
         {/each}
       </div>
     {/if}
+  </section>
+
+  <section class="review-card pantry-card" class:degraded={!!pantryError || !!sharedPantryError}>
+    <div class="review-summary">
+      <div class="icon-well small"><Sparkles size={16} /></div>
+      <div class="review-copy">
+        <span>Shared recipes</span>
+        <strong>{pantryError || sharedPantryError ? "Partially unavailable" : `${pantryRecipes.length + sharedPantryRecipes.length} visible recipe${pantryRecipes.length + sharedPantryRecipes.length === 1 ? "" : "s"}`}</strong>
+        <small>Private owner shelf and opt-in shared shelf · metadata only · source stays out of discovery</small>
+      </div>
+      <button class:spinning={pantryRefreshing} disabled={pantryRefreshing} aria-label="Refresh Pantry recipes" onclick={refreshPantry}><RefreshCw size={14} /></button>
+    </div>
+
+    <div class="pantry-shelves">
+      <div class="pantry-shelf">
+        <div class="shelf-heading"><strong>Private · owner only</strong><small>{pantryRecipes.length} visible</small></div>
+        {#if pantryError}
+          <p class="review-empty pantry-state">Unavailable: {pantryError}. Check the protected credential; no private names were returned.</p>
+        {:else if pantryRecipes.length === 0}
+          <p class="review-empty pantry-state">No private recipes found.</p>
+        {:else}
+          <div class="review-list pantry-list">
+            {#each pantryRecipes.slice(0, 5) as recipe (recipe.name)}
+              <div class="review-row pantry-row">
+                <span><strong>{recipe.name}</strong><small>{recipe.description}</small></span>
+                <small><b>{recipe.visibility ?? "private"}</b> · v{recipe.version ?? "?"}</small>
+              </div>
+            {/each}
+          </div>
+        {/if}
+      </div>
+
+      <div class="pantry-shelf">
+        <div class="shelf-heading"><strong>Shared · recipient readable</strong><small>{sharedPantryRecipes.length} visible</small></div>
+        {#if sharedPantryError}
+          <p class="review-empty pantry-state">Unavailable: {sharedPantryError}. Sharing remains fail-closed.</p>
+        {:else if sharedPantryRecipes.length === 0}
+          <p class="review-empty pantry-state">No recipes have been explicitly shared with this owner.</p>
+        {:else}
+          <div class="review-list pantry-list">
+            {#each sharedPantryRecipes.slice(0, 5) as recipe (recipe.name)}
+              <div class="review-row pantry-row">
+                <span><strong>{recipe.name}</strong><small>{recipe.description}</small></span>
+                <small><b>{recipe.author ?? "unknown author"}</b> · {recipe.visibility ?? "shared"} · v{recipe.version ?? "?"}</small>
+              </div>
+            {/each}
+          </div>
+        {/if}
+      </div>
+    </div>
+    <p class="pantry-trust-note">Trust state: shared entries show author provenance before any explicit source fetch. Mote never fetches or runs recipe source.</p>
   </section>
 
   <section class="review-card loops-card" class:blocked={loops.some((loop) => loop.latest?.exitCode != null && loop.latest.exitCode !== 0)}>
