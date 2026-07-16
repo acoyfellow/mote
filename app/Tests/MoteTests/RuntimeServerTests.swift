@@ -8,19 +8,22 @@ struct RuntimeServerTests {
     func ownsAndStopsItsRuntimeProcess() async throws {
         let workspace = FileManager.default.temporaryDirectory
             .appendingPathComponent("mote-runtime-tests-\(UUID().uuidString)", isDirectory: true)
-        let bin = workspace.appendingPathComponent("node_modules/.bin", isDirectory: true)
-        try FileManager.default.createDirectory(at: bin, withIntermediateDirectories: true)
+        let viteBin = workspace.appendingPathComponent("node_modules/vite/bin", isDirectory: true)
+        try FileManager.default.createDirectory(at: viteBin, withIntermediateDirectories: true)
         try "{}".write(to: workspace.appendingPathComponent("package.json"), atomically: true, encoding: .utf8)
         try "<title>Mote</title>".write(to: workspace.appendingPathComponent("index.html"), atomically: true, encoding: .utf8)
 
-        let vite = bin.appendingPathComponent("vite")
+        let vite = viteBin.appendingPathComponent("vite.js")
         let script = """
-        #!/bin/bash
-        cd "$(dirname "$0")/../.."
-        exec /usr/bin/python3 -m http.server "$4" --bind 127.0.0.1
+        const http = require("node:http");
+        const portIndex = process.argv.indexOf("--port");
+        const port = Number(process.argv[portIndex + 1]);
+        http.createServer((request, response) => {
+          response.writeHead(200, { "content-type": "text/html" });
+          response.end("<title>Mote</title>");
+        }).listen(port, "127.0.0.1");
         """
         try script.write(to: vite, atomically: true, encoding: .utf8)
-        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: vite.path)
 
         let port = Int.random(in: 43_000...48_000)
         let runtime = RuntimeServer(workspaceURL: workspace, port: port)
