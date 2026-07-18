@@ -11,6 +11,10 @@ export type PantryRecipe = {
   visibility: "private" | "shared";
   author?: string;
   updatedAt: string;
+  tags?: string[];
+  runCount?: number;
+  lastRunAt?: string | null;
+  shareCandidate?: boolean;
 };
 
 type MoteResult = Record<string, unknown>;

@@ -202,6 +202,9 @@ struct NativeBridgeTests {
             "status": "enabled",
             "version": 3,
             "visibility": "shared",
+            "tags": ["mr/review"],
+            "runCount": 5,
+            "shareCandidate": true,
             "author": "owner-a",
             "updatedAt": "2026-07-16T00:00:00Z",
             "code": "return process.env.SECRET",
@@ -211,6 +214,9 @@ struct NativeBridgeTests {
         #expect(metadata?.keys.contains("bearerToken") == false)
         #expect(metadata?["author"] as? String == "owner-a")
         #expect(metadata?["visibility"] as? String == "shared")
+        #expect(metadata?["tags"] as? [String] == ["mr/review"])
+        #expect(metadata?["runCount"] as? Int == 5)
+        #expect(metadata?["shareCandidate"] as? Bool == true)
     }
 
     @Test

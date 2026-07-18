@@ -15,7 +15,7 @@
   type TerrariumRun = { runId: string; status?: string; task?: string; progressText?: string; needsAttention?: boolean; startedAt?: string; taskContractStatus?: string };
   type TerrariumState = { activeCount?: number; runs?: TerrariumRun[] };
   type TerrariumDoctor = { ok?: boolean; checks?: { activeRuns?: number; orphanedRuns?: number; needsAttentionRuns?: number; groups?: number; subscribers?: number; pendingCallbacks?: number; inflightCallbacks?: number; staleChildClaims?: number }; warnings?: string[] };
-  type PantryRecipe = { name: string; description: string; capabilities?: string[]; status?: string; version?: number; visibility?: string; author?: string; updatedAt?: string };
+  type PantryRecipe = { name: string; description: string; capabilities?: string[]; tags?: string[]; status?: string; version?: number; runCount?: number; lastRunAt?: string | null; shareCandidate?: boolean; visibility?: string; author?: string; updatedAt?: string };
 
   let maintenanceOutput = $state("checking");
   let customConfigured = $state<boolean | null>(null);
@@ -586,8 +586,8 @@
           <div class="review-list pantry-list">
             {#each pantryRecipes.slice(0, 5) as recipe (recipe.name)}
               <div class="review-row pantry-row">
-                <span><strong>{recipe.name}</strong><small>{recipe.description}</small></span>
-                <small><b>{recipe.visibility ?? "private"}</b> · v{recipe.version ?? "?"}</small>
+                <span><strong>{recipe.name}</strong><small>{recipe.description}</small><small>{recipe.tags?.slice(0, 2).join(" · ") ?? "untagged"}{recipe.shareCandidate ? " · share candidate" : ""}</small></span>
+                <small><b>{recipe.visibility ?? "private"}</b> · {recipe.runCount ?? 0} uses · v{recipe.version ?? "?"}</small>
               </div>
             {/each}
           </div>
@@ -604,8 +604,8 @@
           <div class="review-list pantry-list">
             {#each sharedPantryRecipes.slice(0, 5) as recipe (recipe.name)}
               <div class="review-row pantry-row">
-                <span><strong>{recipe.name}</strong><small>{recipe.description}</small></span>
-                <small><b>{recipe.author ?? "unknown author"}</b> · {recipe.visibility ?? "shared"} · v{recipe.version ?? "?"}</small>
+                <span><strong>{recipe.name}</strong><small>{recipe.description}</small><small>{recipe.tags?.slice(0, 2).join(" · ") ?? "untagged"}</small></span>
+                <small><b>{recipe.author ?? "unknown author"}</b> · {recipe.runCount ?? 0} uses · v{recipe.version ?? "?"}</small>
               </div>
             {/each}
           </div>

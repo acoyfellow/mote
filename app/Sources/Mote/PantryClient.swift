@@ -73,7 +73,11 @@ struct PantryClient: Sendable {
             "version": version,
             "visibility": visibility,
             "updatedAt": updatedAt,
-            "sourceRunId": recipe["sourceRunId"] as? String ?? NSNull()
+            "sourceRunId": recipe["sourceRunId"] as? String ?? NSNull(),
+            "tags": recipe["tags"] as? [String] ?? [],
+            "runCount": recipe["runCount"] as? Int ?? 0,
+            "lastRunAt": recipe["lastRunAt"] as? String ?? NSNull(),
+            "shareCandidate": recipe["shareCandidate"] as? Bool ?? false
         ]
         if let author = recipe["author"] as? String { result["author"] = author }
         return result
