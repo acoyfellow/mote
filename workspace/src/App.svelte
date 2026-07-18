@@ -587,7 +587,7 @@
             {#each pantryRecipes.slice(0, 5) as recipe (recipe.name)}
               <div class="review-row pantry-row">
                 <span><strong>{recipe.name}</strong><small>{recipe.description}</small><small>{recipe.tags?.slice(0, 2).join(" · ") ?? "untagged"}{recipe.shareCandidate ? " · share candidate" : ""}</small></span>
-                <small><b>{recipe.visibility ?? "private"}</b> · {recipe.runCount ?? 0} uses · v{recipe.version ?? "?"}</small>
+                <small><b>{recipe.visibility ?? "private"}</b> · {recipe.runCount ?? 0} uses · last {recipe.lastRunAt ? formatSessionTime(recipe.lastRunAt) : "never"} · v{recipe.version ?? "?"}</small>
               </div>
             {/each}
           </div>
@@ -605,7 +605,7 @@
             {#each sharedPantryRecipes.slice(0, 5) as recipe (recipe.name)}
               <div class="review-row pantry-row">
                 <span><strong>{recipe.name}</strong><small>{recipe.description}</small><small>{recipe.tags?.slice(0, 2).join(" · ") ?? "untagged"}</small></span>
-                <small><b>{recipe.author ?? "unknown author"}</b> · {recipe.runCount ?? 0} uses · v{recipe.version ?? "?"}</small>
+                <small><b>{recipe.author ?? "unknown author"}</b> · {recipe.runCount ?? 0} uses · last {recipe.lastRunAt ? formatSessionTime(recipe.lastRunAt) : "never"} · v{recipe.version ?? "?"}</small>
               </div>
             {/each}
           </div>
