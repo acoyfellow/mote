@@ -89,6 +89,7 @@
   });
   const machineRunning = $derived(machineOutput.startsWith("running "));
   const machineMode = $derived(machineOutput.match(/^running\s+\S+\s+(\S+)/)?.[1] ?? "core");
+  const machineConnectionState = $derived(remoteConnected ? "connected" : machineRunning ? "connecting" : "disconnected");
   const reachable = $derived(reachabilityOutput.startsWith("on "));
   const reachabilityOrphaned = $derived(reachabilityOutput.startsWith("orphan "));
   const reachabilityEnd = $derived.by(() => {
@@ -327,7 +328,7 @@
 
   async function deleteLoop(name: string) {
     await run("loop-delete", () => native.loopsYaml.delete(name));
-    deletePending = null;
+    if (!error) deletePending = null;
     await refreshLoops();
   }
 
@@ -345,17 +346,10 @@
   }
 
   async function showLoopLogs(name: string) {
-    if (busy) return;
-    busy = `loop-logs-${name}`;
-    error = null;
-    try {
+    await run(`loop-logs-${name}`, async () => {
       const result = await native.loopsYaml.logs(name);
       loopLogs = { name, text: String(result.output ?? "No output") };
-    } catch (reason) {
-      error = reason instanceof Error ? reason.message : String(reason);
-    } finally {
-      busy = null;
-    }
+    });
   }
 
   async function watcherAction(action: "start" | "stop" | "restart") {
@@ -410,22 +404,28 @@
     void refreshPulse();
   }
 
+  let serializedActions: Promise<unknown> = Promise.resolve();
+
   async function run(name: string, operation: () => Promise<unknown>) {
-    if (busy) return;
-    busy = name;
-    error = null;
-    try {
-      await operation();
-      await refreshCore();
-    } catch (reason) {
-      error = reason instanceof Error ? reason.message : String(reason);
-    } finally {
-      busy = null;
-    }
+    const queued = serializedActions.then(async () => {
+      busy = name;
+      error = null;
+      try {
+        await operation();
+        await refreshCore();
+      } catch (reason) {
+        error = reason instanceof Error ? reason.message : String(reason);
+      } finally {
+        busy = null;
+      }
+    });
+    serializedActions = queued.catch(() => undefined);
+    return queued;
   }
 
-  function machineAction(action: MachineAction, mode: MachineMode = "core") {
-    return run(`machine-${action}`, () => native.machinectl.action(action, mode));
+  async function machineAction(action: MachineAction, mode: MachineMode = "core") {
+    await run(`machine-${action}`, () => native.machinectl.action(action, mode));
+    await refreshRemote();
   }
 
   function formatSessionTime(value?: string) {
@@ -492,15 +492,15 @@
       <div class="empty-path"><span>workspace/src/App.svelte</span><b>save → live panel</b></div>
     </section>
   {:else}
-    <section class="hero-card" class:online={machineRunning}>
+    <section class="hero-card" class:online={machineConnectionState === "connected"}>
     <div class="hero-glow"></div>
     <div class="card-heading">
       <div class="icon-well"><Laptop size={19} strokeWidth={1.7} /></div>
       <div class="heading-copy">
         <span>Remote access</span>
-        <strong>{machineRunning ? "Connected" : "Offline"}</strong>
+        <strong>{machineConnectionState === "connected" ? "Connected" : machineConnectionState === "connecting" ? "Connecting" : "Disconnected"}</strong>
       </div>
-      <span class="status-pill"><i></i>{machineRunning ? machineMode : "stopped"}</span>
+      <span class="status-pill"><i></i>{machineConnectionState === "connected" ? machineMode : machineConnectionState}</span>
     </div>
 
     <div class="machine-line">
