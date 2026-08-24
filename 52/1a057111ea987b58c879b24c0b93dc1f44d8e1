@@ -1,0 +1,37 @@
+workspace/mote-control.mjs
+  s_9ea43334029fe9::t_b5e1ee75ecf1f2 1-115
+workspace/package.json
+  s_9ea43334029fe9::t_c94ea8f75c93a4 9-11
+workspace/src/lib/pulse.ts
+  s_7410e04aafe3da::t_c1f966db9604a8 37,44,89,91,116,118,122-125,152-157,160-161,176-186,192,204,216
+workspace/src/style.css
+  s_9ea43334029fe9::t_e3569a285d32cc 343,387-404
+workspace/test/mote-control.live.test.mjs
+  s_9ea43334029fe9::t_65adc4d413f61e 1-61
+workspace/test/mote-control.test.mjs
+  s_9ea43334029fe9::t_c3a3ca7a2a6385 1-50
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "521a057111ea987b58c879b24c0b93dc1f44d8e1",
+  "prompts": {},
+  "sessions": {
+    "s_7410e04aafe3da": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a010c5-b200-71a3-933e-bf8a794b4e87",
+        "model": "grok-4.6"
+      },
+      "human_author": "Jordan Coeyman <jcoeyman@cloudflare.com>"
+    },
+    "s_9ea43334029fe9": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a00c04-39b0-7c41-8f8c-319dfb49fbd0",
+        "model": "grok-4.6"
+      },
+      "human_author": "Jordan Coeyman <jcoeyman@cloudflare.com>"
+    }
+  }
+}
