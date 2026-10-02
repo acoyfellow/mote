@@ -1,0 +1,69 @@
+.guardrailignore
+  s_126ff54a0bd5c5::t_72c04cc38d57a9 1-3
+app/Sources/Mote/PanelController.swift
+  s_3a287577ef0d27::t_094fb3d78c5a9c 116
+scripts/dev.coey.mote.plist
+  s_3a287577ef0d27::t_5ff56a150112ef 1-18
+scripts/install.sh
+  s_fc002e6ac2c2f5::t_486c0848ccd992 5-6,9-10,12-27,32-33,35-54,56-87,91-119,121
+scripts/prove-install.sh
+  s_126ff54a0bd5c5::t_1289424671ca9f 1-34
+workspace/package.json
+  s_3a287577ef0d27::t_7707cc13af8fd5 9-10
+workspace/src/App.svelte
+  s_4f3d73861137de::t_6a00e5538bb344 3-6,14-18,49-76,232-234,237-239,241-247,249-252,254,258-279,281-293,295,297-300,304-306,308-310,312,314,316-325,328-332,335-337,339-340,342,344,346,349-362,365-377,380-382,385-390,393-415,418-421,424-429,432-441,443,446-448,451-455,458-459,467,498,501,505-526,534-535,537,540,544-546,618-759
+workspace/src/lib/home-messages.ts
+  s_9ea43334029fe9::t_5b4b599805406b 1-149
+workspace/src/style.css
+  s_9ea43334029fe9::t_6e985c2a8fd083 318-397,482
+workspace/test/home-surface.test.mjs
+  s_9ea43334029fe9::t_d6462e4d052777 1-20,22-25,27-35,37-39,41-86,89-109
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "95346ed1f0c1f1eb3cd167921109580e3bbe50de",
+  "prompts": {},
+  "sessions": {
+    "s_126ff54a0bd5c5": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a05424-af39-71ec-9496-1fa2c4c8ee61",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Jordan Coeyman <jcoeyman@cloudflare.com>"
+    },
+    "s_3a287577ef0d27": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "019f17f7-b570-7a6a-9f50-817745d03cdb",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Jordan Coeyman <jcoeyman@cloudflare.com>"
+    },
+    "s_4f3d73861137de": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "019febf7-4b34-7b21-970a-5f277fcc20a8",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Jordan Coeyman <jcoeyman@cloudflare.com>"
+    },
+    "s_9ea43334029fe9": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a00c04-39b0-7c41-8f8c-319dfb49fbd0",
+        "model": "gpt-5.6-luna"
+      },
+      "human_author": "Jordan Coeyman <jcoeyman@cloudflare.com>"
+    },
+    "s_fc002e6ac2c2f5": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a0aab9-f490-72e1-8d73-920246e8faec",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Jordan Coeyman <jcoeyman@cloudflare.com>"
+    }
+  }
+}
